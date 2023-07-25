@@ -7,11 +7,11 @@ def dfs(now,len):
 	for child in now.childNodes:
 		dfs(child,len+1)
                 
-def defaultNone():
+def defaultNoneList():
     return []
 
 def sub2dict(node):
-    subDict=defaultdict(defaultNone)
+    subDict=defaultdict(defaultNoneList)
     nodelist=node.childNodes
     for subnode in nodelist:
         name=subnode.nodeName

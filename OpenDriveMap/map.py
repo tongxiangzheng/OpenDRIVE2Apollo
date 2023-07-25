@@ -4,7 +4,7 @@ from OpenDriveMap import road
 from OpenDriveMap import controller
 from OpenDriveMap import junction
 from OpenDriveMap.dom_tool import sub2dict
-class Map:
+class OpenDriveMap:
     def __init__(self,document):
         root=document.documentElement
         subDict=sub2dict(root)

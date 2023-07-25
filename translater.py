@@ -1,10 +1,20 @@
-from xml.dom.minidom import parse
+import xml.dom.minidom
 
 import OpenDriveMap.map
+import ApolloMap.map
 #import xml.dom.minidom
 
+doc=xml.dom.minidom.parse("../../OpenDrive-maps-from-CARLA/test.xodr")
+openDriveMap=OpenDriveMap.map.OpenDriveMap(doc)
+ApolloMap=ApolloMap.map.ApolloMap()
+ApolloMap.parse_from_OpenDrive(openDriveMap)
+print(ApolloMap.map)
 
 
-doc=parse("../../OpenDrive-maps-from-CARLA/test.xodr")
-map=OpenDriveMap.map.Map(doc)
 
+
+
+#with open("../../Apollo-maps/map/borregas_ave/base_map.bin", 'rb') as f:
+#    gps_map = ApolloMap.parser.MapParser()
+#    gps_map.parse_from_bin(f.read())
+#    print(gps_map.map.header.version)
