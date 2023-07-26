@@ -53,10 +53,35 @@ class ApolloMap:
             dist.id.id=id
             self.setpolygon(dist,junction)
 
+    def setLaneFromRoad(self,openDriveRoad):
+        for lane in openDriveRoad.lanes.leftLanes:
+            dist=self.map.lane.add()
+            dist.id.id=lane.ApolloName
+            if lane.predecessor is not None:
+                id=dist.predecessor_id.add()
+                id.id=lane.predecessor.ptr.ApolloName
+            if lane.successor is not None:
+                id=dist.successor_id.add()
+                id.id=lane.successor.ptr.ApolloName
+        for lane in openDriveRoad.lanes.rightLanes:
+            dist=self.map.lane.add()
+            dist.id.id=lane.ApolloName
+            if lane.predecessor is not None:
+                id=dist.predecessor_id.add()
+                id.id=lane.predecessor.ptr.ApolloName
+            if lane.successor is not None:
+                id=dist.successor_id.add()
+                id.id=lane.successor.ptr.ApolloName
+
+    def setLane(self,openDriveMap):
+        for id,road in openDriveMap.roads.roads.items():
+            self.setLaneFromRoad(road)
+
     def parse_from_OpenDrive(self, openDriveMap):
         self.setHeader(openDriveMap)
         #setCrossWalk(openDriveMap)
         self.setJunction(openDriveMap)
+        self.setLane(openDriveMap)
     
         
 	

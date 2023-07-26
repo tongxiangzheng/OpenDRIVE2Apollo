@@ -36,7 +36,7 @@ class Junction:
     def __init__(self,node):
         self.name=node.getAttribute('name')
         self.id=node.getAttribute('id')
-        log.info("junction id "+str(self.id))
+        #log.info("junction id "+str(self.id))
         
         subDict=sub2dict(node)
         self.connections=[]
