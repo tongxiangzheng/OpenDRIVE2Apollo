@@ -17,15 +17,11 @@ class OpenDriveMap:
         self.junctions=junction.Junctions(subDict['junction'])
 
         self.roads.parse(self)
-        
+        self.junctions.parse(self)
 
-    def findRoadByRoadLink(self,link):
-        if link.elementType=='road':
-            return self.roads.roads[link.elementId]
-        elif link.elementType=='junction':
-            return self.junctions.junctions[link.elementId]
-        else:
-            log.warning("unknown link type")
-        return None
+    def findRoadById(self,id):
+        return self.roads.roads[id]
+    def findJunctionById(self,id):
+        return self.junctions.junctions[id]
     def print(self):
         self.roads.print()

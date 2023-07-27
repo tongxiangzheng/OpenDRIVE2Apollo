@@ -52,26 +52,31 @@ class ApolloMap:
             dist=self.map.junction.add()
             dist.id.id=id
             self.setpolygon(dist,junction)
-
+    def setLaneFromLane(self,lane):
+        dist=self.map.lane.add()
+        dist.id.id=lane.ApolloName
+        for predecessor in lane.ApolloPredecessors:
+            id=dist.predecessor_id.add()
+            id.id=predecessor.ApolloName
+        for successor in lane.ApolloSuccessors:
+            id=dist.successor_id.add()
+            id.id=successor.ApolloName
+        if lane.left_neighbor_forward_lane is not None:
+            self.map.left_neighbor_forward_lane_id=lane.left_neighbor_forward_lane.ApolloName
+        if lane.left_neighbor_reverse_lane_id is not None:
+            self.map.left_neighbor_reverse_lane_id=lane.left_neighbor_reverse_lane.ApolloName
+        if lane.right_neighbor_reverse_lane_id is not None:
+            self.map.right_neighbor_reverse_lane_id=lane.right_neighbor_reverse_lane.ApolloName
+        if lane.right_neighbor_forward_lane_id is not None:
+            self.map.right_neighbor_forward_lane_id=lane.right_neighbor_forward_lane.ApolloName
+            
+         
+         
     def setLaneFromRoad(self,openDriveRoad):
         for lane in openDriveRoad.lanes.leftLanes:
-            dist=self.map.lane.add()
-            dist.id.id=lane.ApolloName
-            if lane.predecessor is not None:
-                id=dist.predecessor_id.add()
-                id.id=lane.predecessor.ptr.ApolloName
-            if lane.successor is not None:
-                id=dist.successor_id.add()
-                id.id=lane.successor.ptr.ApolloName
+            self.setLaneFromLane(lane)
         for lane in openDriveRoad.lanes.rightLanes:
-            dist=self.map.lane.add()
-            dist.id.id=lane.ApolloName
-            if lane.predecessor is not None:
-                id=dist.predecessor_id.add()
-                id.id=lane.predecessor.ptr.ApolloName
-            if lane.successor is not None:
-                id=dist.successor_id.add()
-                id.id=lane.successor.ptr.ApolloName
+            self.setLaneFromLane(lane)
 
     def setLane(self,openDriveMap):
         for id,road in openDriveMap.roads.roads.items():

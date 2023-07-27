@@ -13,10 +13,15 @@ class Connection:
         self.incomingRoad=node.getAttribute('incomingRoad')
         self.connectingRoad=node.getAttribute('connectingRoad')
         self.contactPoint=node.getAttribute('contactPoint')
+        self.incomingRoad_ptr=None
+        self.connectingRoad_ptr=None
         #log.info("connection id "+str(self.id))
         self.laneLinks=[]
         for laneLink in node.getElementsByTagName('laneLink'):
             self.laneLinks.append(LaneLink(laneLink))
+    def parse(self,map):
+        self.incomingRoad_ptr=map.findRoadById(self.incomingRoad)
+        self.connectingRoad_ptr=map.findRoadById(self.connectingRoad)
         
 class Controller:
     def __init__(self,node):
@@ -55,6 +60,23 @@ class Junction:
             self.userData=UserData(subDict['userData'][0])
         else:
             log.info("junction: no userData")
+    def getConnectingRoad(self,road):
+        ans=[]
+        for connection in self.connections:
+            if connection.incomingRoad==road.id:
+                ans.append(connection.connectingRoad)
+        return ans
+    def getIncomingRoad(self,road):
+        ans=[]
+        for connection in self.connections:
+            if connection.connectingRoad==road.id:
+                ans.append(connection.incomingRoad)
+        return ans
+    
+    def parse(self,map):
+        for connection in self.connections:
+            connection.parse(map)
+
 class Junctions:
     def __init__(self,nodeList):
         self.junctions=dict()
@@ -62,3 +84,6 @@ class Junctions:
             id=node.getAttribute('id')
             #print(id)
             self.junctions[id]=Junction(node)
+    def parse(self,map):
+        for id,junction in self.junctions.items():
+            junction.parse(map)
