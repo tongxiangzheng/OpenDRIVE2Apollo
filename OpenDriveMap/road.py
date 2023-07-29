@@ -305,7 +305,7 @@ class Road:
                 log.warning("unknown link type")
 
         self.lanes.parse(self,self.predecessor,self.successor,self.junction)
-        self.planView.parse(self,map)
+        self.planView.parse(map)
     def print(self):
         print(self.ApolloName)
         self.lanes.print()

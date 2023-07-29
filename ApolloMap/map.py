@@ -1,7 +1,7 @@
 from loguru import logger as log
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 import pyproj
-
+from ApolloMap.curve import Curve
 class ApolloMap:
     def __init__(self):
         self.map=map_pb2.Map()
@@ -111,10 +111,12 @@ class ApolloMap:
         if lane.right_neighbor_forward_lane is not None:
             id=dist.right_neighbor_forward_lane_id.add()
             id.id=lane.right_neighbor_forward_lane.ApolloName
+        
             
          
          
     def setLaneFromRoad(self,openDriveRoad):
+        curve=Curve(openDriveRoad.planView)
         for lane in openDriveRoad.lanes.lanes.values():
             self.setLaneFromLane(lane)
 
