@@ -4,7 +4,7 @@ import OpenDriveMap.map
 import ApolloMap.map
 #import xml.dom.minidom
 
-doc=xml.dom.minidom.parse("../../OpenDrive-maps-from-CARLA/carla_Town10HD_Opt.xodr")
+doc=xml.dom.minidom.parse("../../OpenDrive-maps-from-CARLA/carla_Town01_Opt.xodr")
 openDriveMap=OpenDriveMap.map.OpenDriveMap(doc)
 #openDriveMap.print()
 ApolloMap=ApolloMap.map.ApolloMap()

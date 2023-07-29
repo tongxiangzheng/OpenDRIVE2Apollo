@@ -3,10 +3,12 @@ from OpenDriveMap.dom_tool import sub2dict,dfs
 
 class LaneLink:
     def __init__(self,node):
-        self.laneLink_from=node.getAttribute('from')
+        self.lane_from=node.getAttribute('from')
         #from是关键词 :(
-        self.laneLink_to=node.getAttribute('to')
-
+        self.lane_to=node.getAttribute('to')
+    def parse(self,map,incomingRoad,connectingRoad):
+        self.lane_from_ptr=incomingRoad.getLaneById(self.lane_from)
+        self.lane_to_ptr=connectingRoad.getLaneById(self.lane_to)
 class Connection:
     def __init__(self,node):
         self.id=node.getAttribute('id')
@@ -22,7 +24,13 @@ class Connection:
     def parse(self,map):
         self.incomingRoad_ptr=map.findRoadById(self.incomingRoad)
         self.connectingRoad_ptr=map.findRoadById(self.connectingRoad)
+        if self.incomingRoad_ptr is None:
+            log.error("junction.connection:cannot find road")
+        if self.connectingRoad_ptr is None:
+            log.error("junction.connection:cannot find road")
         
+        for laneLink in self.laneLinks:
+            laneLink.parse(map,self.incomingRoad_ptr,self.connectingRoad_ptr)
 class Controller:
     def __init__(self,node):
         self.id=node.getAttribute('id')
@@ -60,12 +68,14 @@ class Junction:
             self.userData=UserData(subDict['userData'][0])
         else:
             log.info("junction: no userData")
+    #abandon
     def getConnectingRoad(self,road):
         ans=[]
         for connection in self.connections:
             if connection.incomingRoad==road.id:
                 ans.append(connection.connectingRoad)
         return ans
+    #abandon
     def getIncomingRoad(self,road):
         ans=[]
         for connection in self.connections:
@@ -73,7 +83,63 @@ class Junction:
                 ans.append(connection.incomingRoad)
         return ans
     
+    def getConnectingLane(self,road,lane):
+        ans=[]
+        for connection in self.connections:
+            
+            #if road.id=='0' and lane.id=='1':
+                #log.info("connection id: "+connection.id+' '+connection.incomingRoad)
+            if connection.incomingRoad_ptr==road:
+                #if road.id=='0' and lane.id=='1':
+                    #log.info("now")
+                for laneLink in connection.laneLinks:
+                    #if road.id=='0' and lane.id=='1':
+                        #log.info("lanelink : "+laneLink.lane_from+' '+laneLink.lane_to)
+                    if laneLink.lane_from_ptr==lane:
+                        #if road.id=='0' and lane.id=='1':
+                            #log.info("now2")
+                        ans.append(laneLink.lane_to_ptr)
+            if connection.connectingRoad_ptr==road:
+                #if road.id=='0' and lane.id=='1':
+                    #log.info("now")
+                for laneLink in connection.laneLinks:
+                    #if road.id=='0' and lane.id=='1':
+                        #log.info("lanelink : "+laneLink.lane_from+' '+laneLink.lane_to)
+                    if laneLink.lane_to_ptr==lane:
+                        #if road.id=='0' and lane.id=='1':
+                            #log.info("now2")
+                        ans.append(laneLink.lane_from_ptr)
+        return ans
+    def getIncomingLane(self,road,lane):
+        ans=[]
+        for connection in self.connections:
+            
+            #if road.id=='0' and lane.id=='1':
+                #log.info("connection id: "+connection.id+' '+connection.incomingRoad)
+            if connection.incomingRoad_ptr==road:
+                #if road.id=='0' and lane.id=='1':
+                    #log.info("now")
+                for laneLink in connection.laneLinks:
+                    #if road.id=='0' and lane.id=='1':
+                        #log.info("lanelink : "+laneLink.lane_from+' '+laneLink.lane_to)
+                    if laneLink.lane_from_ptr==lane:
+                        #if road.id=='0' and lane.id=='1':
+                            #log.info("now2")
+                        ans.append(laneLink.lane_to_ptr)
+            if connection.connectingRoad_ptr==road:
+                #if road.id=='0' and lane.id=='1':
+                    #log.info("now")
+                for laneLink in connection.laneLinks:
+                    #if road.id=='0' and lane.id=='1':
+                        #log.info("lanelink : "+laneLink.lane_from+' '+laneLink.lane_to)
+                    if laneLink.lane_to_ptr==lane:
+                        #if road.id=='0' and lane.id=='1':
+                            #log.info("now2")
+                        ans.append(laneLink.lane_from_ptr)
+        return ans
+    
     def parse(self,map):
+        self.ApolloName="junction_"+self.id
         for connection in self.connections:
             connection.parse(map)
 

@@ -1,3 +1,4 @@
+from loguru import logger as log
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 import pyproj
 
@@ -50,11 +51,48 @@ class ApolloMap:
     
         for id,junction in openDriveMap.junctions.junctions.items():
             dist=self.map.junction.add()
-            dist.id.id=id
+            dist.id.id=junction.ApolloName
             self.setpolygon(dist,junction)
     def setLaneFromLane(self,lane):
         dist=self.map.lane.add()
         dist.id.id=lane.ApolloName
+        if lane.type=='shoulder':
+            dist.type=dist.LaneType.SHOULDER
+        elif lane.type=='border':
+            log.warning('translate:lane:not support lane type:border')
+        elif lane.type=='driving':
+            dist.type=dist.LaneType.CITY_DRIVING
+        elif lane.type=='stop':
+            log.warning('translate:lane:not support lane type:stop')
+        elif lane.type=='none':
+            dist.type=dist.LaneType.NONE
+        elif lane.type=='restricted':
+            log.warning('translate:lane:not support lane type:restricted')
+        elif lane.type=='parking':
+            dist.type=dist.LaneType.PARKING
+        elif lane.type=='median':
+            log.warning('translate:lane:not support lane type:median')
+        elif lane.type=='biking':
+            dist.type=dist.LaneType.BIKING
+        elif lane.type=='sidewalk':
+            dist.type=dist.LaneType.SIDEWALK
+        elif lane.type=='curb':
+            log.warning('translate:lane:not support lane type:curb')
+        elif lane.type=='exit':
+            log.warning('translate:lane:not support lane type:exit')
+        elif lane.type=='entry':
+            log.warning('translate:lane:not support lane type:entry')
+        elif lane.type=='onramp':
+            log.warning('translate:lane:not support lane type:onramp')
+        elif lane.type=='offRamp':
+            log.warning('translate:lane:not support lane type:offRamp')
+        elif lane.type=='connectingRamp':
+            log.warning('translate:lane:not support lane type:connectingRamp')
+        else:
+            log.warning('translate:lane:not known lane type:'+lane.type)
+            
+            
+        dist.direction=dist.LaneDirection.FORWARD
         for predecessor in lane.ApolloPredecessors:
             id=dist.predecessor_id.add()
             id.id=predecessor.ApolloName
@@ -62,24 +100,26 @@ class ApolloMap:
             id=dist.successor_id.add()
             id.id=successor.ApolloName
         if lane.left_neighbor_forward_lane is not None:
-            self.map.left_neighbor_forward_lane_id=lane.left_neighbor_forward_lane.ApolloName
-        if lane.left_neighbor_reverse_lane_id is not None:
-            self.map.left_neighbor_reverse_lane_id=lane.left_neighbor_reverse_lane.ApolloName
-        if lane.right_neighbor_reverse_lane_id is not None:
-            self.map.right_neighbor_reverse_lane_id=lane.right_neighbor_reverse_lane.ApolloName
-        if lane.right_neighbor_forward_lane_id is not None:
-            self.map.right_neighbor_forward_lane_id=lane.right_neighbor_forward_lane.ApolloName
+            id=dist.left_neighbor_forward_lane_id.add()
+            id.id=lane.left_neighbor_forward_lane.ApolloName
+        if lane.left_neighbor_reverse_lane is not None:
+            id=dist.left_neighbor_reverse_lane_id.add()
+            id.id=lane.left_neighbor_reverse_lane.ApolloName
+        if lane.right_neighbor_reverse_lane is not None:
+            id=dist.right_neighbor_reverse_lane_id.add()
+            id.id=lane.right_neighbor_reverse_lane.ApolloName
+        if lane.right_neighbor_forward_lane is not None:
+            id=dist.right_neighbor_forward_lane_id.add()
+            id.id=lane.right_neighbor_forward_lane.ApolloName
             
          
          
     def setLaneFromRoad(self,openDriveRoad):
-        for lane in openDriveRoad.lanes.leftLanes:
-            self.setLaneFromLane(lane)
-        for lane in openDriveRoad.lanes.rightLanes:
+        for lane in openDriveRoad.lanes.lanes.values():
             self.setLaneFromLane(lane)
 
     def setLane(self,openDriveMap):
-        for id,road in openDriveMap.roads.roads.items():
+        for road in openDriveMap.roads.roads.values():
             self.setLaneFromRoad(road)
 
     def parse_from_OpenDrive(self, openDriveMap):

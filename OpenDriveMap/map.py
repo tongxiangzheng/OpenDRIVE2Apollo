@@ -16,8 +16,8 @@ class OpenDriveMap:
         self.controllers=controller.Controllers(subDict['controller'])
         self.junctions=junction.Junctions(subDict['junction'])
 
-        self.roads.parse(self)
         self.junctions.parse(self)
+        self.roads.parse(self)
 
     def findRoadById(self,id):
         return self.roads.roads[id]
