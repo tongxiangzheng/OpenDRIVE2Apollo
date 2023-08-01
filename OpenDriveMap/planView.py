@@ -1,6 +1,16 @@
 from loguru import logger as log
 from OpenDriveMap.dom_tool import sub2dict,dfs
-
+import math
+class Direct:
+    def __init__(self,x,y,hdg):
+        self.x=x
+        self.y=y
+        self.directX=math.sin(hdg)
+        self.directY=math.sin(hdg)
+    def run(self,s):
+        self.x+=self.directX*s
+        self.y+=self.directY*s
+        
 class Geometry:
     def __init__(self,node):
         #dfs(node,1)
@@ -23,7 +33,11 @@ class Geometry:
 
         else:
             log.warning("Geometry:unknown geometry type")
-            
+    def getDirect(self,s):
+        if self.type=="line":
+            direct=Vector(self.x,self.y,self.hdg)
+            direct.run(s)
+            return direct
     def parse(self,map):
         "nothting"
         

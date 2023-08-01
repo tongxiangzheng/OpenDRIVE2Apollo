@@ -37,7 +37,23 @@ class Offset:
         self.b=node.getAttribute('b')
         self.c=node.getAttribute('c')
         self.d=node.getAttribute('d')
-
+class Offsets:
+    def __init__(self,nodeList):
+        self.offsets=[]
+        for node in nodeList:
+             self.offsets.append(Offset(node))
+    def getOffset(self,s):
+        p=0
+        for i in range(len(self.offsets)):
+            offset=self.offsets[i]
+            if offset.s>s:
+                break
+            p=i
+        offset=self.offsets[p]
+        s=s-offset.s
+        #return a+b*s+c*s^2+d*s^3
+        return offset.a+s*(offset.b+s*(offset.c+s*offset.d))
+        
 class LaneLink:
     def __init__(self,node):
         #print(node)
@@ -72,6 +88,8 @@ class Lane:
         else:
             self.predecessor=None
             self.successor=None
+        #offsetList=subDict['roadMark']
+        widthList=subDict['width']
 
     def addConnect(self,lane,contactPoint):
         if contactPoint=='start':
@@ -165,7 +183,7 @@ class Lane:
 class Lanes:
     def __init__(self,node):
         subDict=sub2dict(node)
-        laneOffset=Offset(subDict['laneOffset'][0])
+        self.laneOffsets=Offsets(subDict['laneOffset'])
 
         subDict=sub2dict(subDict['laneSection'][0])
         
@@ -286,7 +304,8 @@ class Road:
     
     def parse(self,map):
         self.ApolloName='road_'+self.id
-        
+        if self.junction is not None:
+            self.junction=map.findJunctionById(self.junction)
         if self.predecessor is not None:
             link=self.predecessor
             if link.elementType=='road':

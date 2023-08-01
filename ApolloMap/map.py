@@ -1,7 +1,7 @@
 from loguru import logger as log
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 import pyproj
-from ApolloMap.curve import Curve
+from ApolloMap.curve import Curve,OffsetsDict
 class ApolloMap:
     def __init__(self):
         self.map=map_pb2.Map()
@@ -53,9 +53,15 @@ class ApolloMap:
             dist=self.map.junction.add()
             dist.id.id=junction.ApolloName
             self.setpolygon(dist,junction)
-    def setLaneFromLane(self,lane):
+
+    def setLaneFromLane(self,lane,planView,offsetsDict):
         dist=self.map.lane.add()
         dist.id.id=lane.ApolloName
+        curve=Curve(planView,offsetsDict,self.transformer)
+        segment=dist.central_curve.segment.add()
+        for point in curve.points:
+            #segment.add()
+            "continue"
         if lane.type=='shoulder':
             dist.type=dist.LaneType.SHOULDER
         elif lane.type=='border':
@@ -116,19 +122,46 @@ class ApolloMap:
          
          
     def setLaneFromRoad(self,openDriveRoad):
-        curve=Curve(openDriveRoad.planView)
-        for lane in openDriveRoad.lanes.lanes.values():
-            self.setLaneFromLane(lane)
+        left="1"
+        leftOffsetsDict=OffsetsDict()
+        while left in openDriveRoad.lanes.lanes:
+            lane=openDriveRoad.lanes.lanes[left]
+            self.setLaneFromLane(lane,openDriveRoad.planView,OffsetsDict())
+            leftOffsetsDict.addOffsets(lane.laneOffsets)
+            left=str(int(left)+1)
+        right="-1"
+        rightOffsetsDict=OffsetsDict()
+        while right in openDriveRoad.lanes.lanes:
+            lane=openDriveRoad.lanes.lanes[right]
+            self.setLaneFromLane(lane,openDriveRoad.planView,OffsetsDict())
+            rightOffsetsDict.addOffsets(lane.laneOffsets)
+            right=str(int(right)-1)
+        
+        #for lane in openDriveRoad.lanes.lanes.values():
+        #    self.setLaneFromLane(lane,openDriveRoad.planView,OffsetsDict())
 
     def setLane(self,openDriveMap):
         for road in openDriveMap.roads.roads.values():
             self.setLaneFromRoad(road)
 
+    def setRoad(self,openDriveMap):
+        for road in openDriveMap.roads.roads.values():
+            distRoad=self.map.road.add()
+            distRoad.id.id=road.ApolloName
+            section=distRoad.section.add()
+            section.id.id="1"
+            for lane in road.lanes.lanes.values():
+                distLane=section.lane_id.add()
+                distLane.id=lane.ApolloName
+                "continue"
+            if road.junction is not None:
+                distRoad.junction_id.id=road.junction.ApolloName
+            #distRoad.type=distRoad.Type.CITY_ROAD
     def parse_from_OpenDrive(self, openDriveMap):
         self.setHeader(openDriveMap)
         #setCrossWalk(openDriveMap)
         self.setJunction(openDriveMap)
         self.setLane(openDriveMap)
-    
+        self.setRoad(openDriveMap)
         
 	
