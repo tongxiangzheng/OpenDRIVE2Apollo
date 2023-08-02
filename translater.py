@@ -9,7 +9,10 @@ openDriveMap=OpenDriveMap.map.OpenDriveMap(doc)
 #openDriveMap.print()
 ApolloMap=ApolloMap.map.ApolloMap()
 ApolloMap.parse_from_OpenDrive(openDriveMap)
-print(ApolloMap.map)
+
+with open("01.txt", "w",encoding='utf-8') as f:
+  print(ApolloMap.map,file=f)
+
 
 
 

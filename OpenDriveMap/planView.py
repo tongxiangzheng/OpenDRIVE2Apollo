@@ -7,18 +7,20 @@ class Direct:
         self.y=y
         self.directX=math.sin(hdg)
         self.directY=math.sin(hdg)
-    def run(self,s):
-        self.x+=self.directX*s
-        self.y+=self.directY*s
+    def offset(self,offset):
+        offsetDirectX=-self.directY
+        offsetDirectY=self.directX
+        self.x+=offset*offsetDirectX
+        self.y+=offset*offsetDirectY
         
 class Geometry:
     def __init__(self,node):
         #dfs(node,1)
-        self.s=node.getAttribute('s')
-        self.x=node.getAttribute('x')
-        self.y=node.getAttribute('y')
-        self.hdg=node.getAttribute('hdg')
-        self.length=node.getAttribute('length')
+        self.s=float(node.getAttribute('s'))
+        self.x=float(node.getAttribute('x'))
+        self.y=float(node.getAttribute('y'))
+        self.hdg=float(node.getAttribute('hdg'))
+        self.length=float(node.getAttribute('length'))
         self.type="unknown"
         if len(node.getElementsByTagName('line'))==1:
             self.type="line"
@@ -34,10 +36,12 @@ class Geometry:
         else:
             log.warning("Geometry:unknown geometry type")
     def getDirect(self,s):
-        if self.type=="line":
-            direct=Vector(self.x,self.y,self.hdg)
-            direct.run(s)
-            return direct
+        s-=self.s
+        #if self.type=="line":
+        direct=Direct(self.x,self.y,self.hdg)
+        direct.x+=direct.directX*s
+        direct.y+=direct.directY*s
+        return direct
     def parse(self,map):
         "nothting"
         

@@ -3,12 +3,15 @@ from OpenDriveMap.road import Offsets
 class OffsetsDict:
     def __init__(self):
         self.offsetsList=[]
-    def addOffsets(self,offsets):
-        self.offsetsList.append(offsets)
+    def addOffsets(self,offsets,coefficient):
+        self.offsetsList.append((offsets,coefficient))
+    def popOffsets(self):
+        self.offsetsList.pop()
     def getOffset(self,s):
         ans=0
-        for offsets in self.offsetsList:
-            ans=ans+offsets.getOffset(s)
+        return 0
+        for offsets,coefficient in self.offsetsList:
+            ans=ans+offsets.getOffset(s)*coefficient
         return ans
 class Point:
     def __init__(self,s,x,y,transformer):
@@ -32,11 +35,27 @@ class LanePoint:
         "continue"
 class Curve:
     def __init__(self,PlanView,offsetsDict,transformer):
+        #-------------------
+        SIM_SPEED=10
+        #-------------------
+
         self.points=[]
         self.lines=[]
-        for geometry in PlanView.geometrys:
-            self.addPoint(Point(geometry.s,geometry.x,geometry.y,transformer))
-        "continue"
+        p=0
+        s=0
+
+        while p<len(PlanView.geometrys):
+            geometry=PlanView.geometrys[p]
+            if s>geometry.length+geometry.s:
+                s=geometry.length+geometry.s
+                p+=1
+            direct=geometry.getDirect(geometry.length+geometry.s)
+            s+=SIM_SPEED
+            direct.offset(offsetsDict.getOffset(s))
+            self.addPoint(Point(s,direct.x,direct.y,transformer))
+        #for geometry in PlanView.geometrys:
+            #self.addPoint(Point(geometry.s,geometry.x,geometry.y,transformer))
+        
     def addPoint(self,point):
         self.points.append(point)
         if len(self.points)>=2:

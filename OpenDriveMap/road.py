@@ -32,11 +32,17 @@ class Type:
     
 class Offset:
     def __init__(self,node):
-        self.s=node.getAttribute('s')
-        self.a=node.getAttribute('a')
-        self.b=node.getAttribute('b')
-        self.c=node.getAttribute('c')
-        self.d=node.getAttribute('d')
+        if node.hasAttribute('s'):
+            self.s=float(node.getAttribute('s'))
+        elif node.hasAttribute('sOffset'):
+            self.s=float(node.getAttribute('sOffset'))
+        else:
+            log.error("offset parse error")
+    
+        self.a=float(node.getAttribute('a'))
+        self.b=float(node.getAttribute('b'))
+        self.c=float(node.getAttribute('c'))
+        self.d=float(node.getAttribute('d'))
 class Offsets:
     def __init__(self,nodeList):
         self.offsets=[]
@@ -89,7 +95,7 @@ class Lane:
             self.predecessor=None
             self.successor=None
         #offsetList=subDict['roadMark']
-        widthList=subDict['width']
+        self.widthOffsets=Offsets(subDict['width'])
 
     def addConnect(self,lane,contactPoint):
         if contactPoint=='start':
@@ -113,9 +119,12 @@ class Lane:
 
     def parse(self,curRoad,preLink,sucLink,leftLane,rightLane,junction):
         if int(self.id)>0:
+            self.forward=-1
             preLink,sucLink=sucLink,preLink     #swap
             #leftLane,rightLane=rightLane,leftLane
             self.predecessor,self.successor=self.successor,self.predecessor
+        else:
+            self.forward=1
 
         self.junction=junction
         self.road=curRoad
