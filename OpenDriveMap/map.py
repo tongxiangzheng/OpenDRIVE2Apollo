@@ -15,7 +15,7 @@ class OpenDriveMap:
         self.roads=road.Roads(subDict['road'])
         self.controllers=controller.Controllers(subDict['controller'])
         self.junctions=junction.Junctions(subDict['junction'])
-
+        self.overlaps=[]
         self.junctions.parse(self)
         self.roads.parse(self)
 
@@ -23,5 +23,9 @@ class OpenDriveMap:
         return self.roads.roads[id]
     def findJunctionById(self,id):
         return self.junctions.junctions[id]
+    
+    def addOverlap(self,overlap):
+        self.overlaps.append(overlap)
+
     def print(self):
         self.roads.print()

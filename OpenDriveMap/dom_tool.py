@@ -7,6 +7,14 @@ def dfs(now,len):
 	for child in now.childNodes:
 		dfs(child,len+1)
                 
+
+class Counter:
+    def __init__(self):
+        self.id=0
+    def getId(self):
+        ans=str(self.id)
+        self.id+=1
+        return ans
 def defaultNoneList():
     return []
 

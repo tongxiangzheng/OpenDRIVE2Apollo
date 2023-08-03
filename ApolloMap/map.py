@@ -1,5 +1,6 @@
 from loguru import logger as log
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
+import ApolloMap.proto_lib.modules.map.proto.map_overlap_pb2 as map_overlap_pb2
 import pyproj
 from ApolloMap.curve import Curve,OffsetsDict
 class ApolloMap:
@@ -38,7 +39,8 @@ class ApolloMap:
     def setCrosswalk(self,openDriveMap):
         crosswalk0=self.crosswalk.add()
         "to be continued..."
-    
+
+    #abandon
     def setpolygon(self,dist,junction):
         for connection in junction.connections:
             for lane in connection.laneLinks:
@@ -49,16 +51,23 @@ class ApolloMap:
 
     def setJunction(self,openDriveMap):
     
-        for id,junction in openDriveMap.junctions.junctions.items():
+        for junction in openDriveMap.junctions.junctions.values():
             dist=self.map.junction.add()
             dist.id.id=junction.ApolloName
-            self.setpolygon(dist,junction)
+            #self.setpolygon(dist,junction)
+            for overlap in junction.overlap_junction_lanes:
+                distOverlap=dist.overlap_id.add()
+                distOverlap.id=overlap.ApolloName
+
     def setSegment(self,planView,offsetsDict,segment):
         curve=Curve(planView,offsetsDict,self.transformer)
         for point in curve.points:
             dictPoint=segment.line_segment.point.add()
             dictPoint.x=point.x
             dictPoint.y=point.y
+            #log.info(str(point.x)+' '+str(point.y))
+
+        #log.info("----------------------")
 
     def setLaneFromLane(self,lane,planView,offsetsDict):
         dist=self.map.lane.add()
@@ -131,9 +140,13 @@ class ApolloMap:
             log.warning('translate:lane:not support lane type:connectingRamp')
         else:
             log.warning('translate:lane:not known lane type:'+lane.type)
-            
-            
+        
+        if lane.overlap_junction_lane is not None:
+            overlap=dist.overlap_id.add()
+            overlap.id=lane.overlap_junction_lane.ApolloName
+
         dist.direction=dist.LaneDirection.FORWARD
+
         for predecessor in lane.ApolloPredecessors:
             id=dist.predecessor_id.add()
             id.id=predecessor.ApolloName
@@ -192,11 +205,30 @@ class ApolloMap:
             if road.junction is not None:
                 distRoad.junction_id.id=road.junction.ApolloName
             #distRoad.type=distRoad.Type.CITY_ROAD
+            
+    def setOverlap(self,openDriveMap):
+        for overlap in openDriveMap.overlaps:
+            dist=self.map.overlap.add()
+            if overlap.kind=="junction_with_lane":
+                dist.id.id=overlap.ApolloName
+
+                distLane=dist.object.add()
+                distLane.id.id=overlap.lane.ApolloName
+                distLane.lane_overlap_info.start_s=float(0)
+                distLane.lane_overlap_info.end_s=float(1)   #先这样填吧...
+                distLane.lane_overlap_info.is_merge=False
+
+                distJunction=dist.object.add()
+                distJunction.id.id=overlap.junction.ApolloName
+                distJunction.junction_overlap_info.CopyFrom(map_overlap_pb2.JunctionOverlapInfo())  #nt设计
+
+            else:
+                log.error("unknown overlap kind")
     def parse_from_OpenDrive(self, openDriveMap):
         self.setHeader(openDriveMap)
         #setCrossWalk(openDriveMap)
         self.setJunction(openDriveMap)
         self.setLane(openDriveMap)
         self.setRoad(openDriveMap)
-        
+        self.setOverlap(openDriveMap)
 	

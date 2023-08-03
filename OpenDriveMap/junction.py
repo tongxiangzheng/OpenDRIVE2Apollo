@@ -54,7 +54,7 @@ class Junction:
         subDict=sub2dict(node)
         self.connections=[]
         self.controllers=[]
-        
+        self.overlap_junction_lanes=[]
         connectionList=subDict['connection']
         for connection in connectionList:
             self.connections.append(Connection(connection))
@@ -138,8 +138,9 @@ class Junction:
                         ans.append(laneLink.lane_from_ptr)
         return ans
     
-    def parse(self,map):
-        self.ApolloName="junction_"+self.id
+    def parse(self,map,id):
+        self.ApolloId=str(id)
+        self.ApolloName="J_"+self.ApolloId
         for connection in self.connections:
             connection.parse(map)
 
@@ -151,5 +152,7 @@ class Junctions:
             #print(id)
             self.junctions[id]=Junction(node)
     def parse(self,map):
-        for id,junction in self.junctions.items():
-            junction.parse(map)
+        id=0
+        for junction in self.junctions.values():
+            junction.parse(map,id)
+            id+=1

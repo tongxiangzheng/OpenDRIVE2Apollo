@@ -1,5 +1,5 @@
 from loguru import logger as log
-from OpenDriveMap.dom_tool import sub2dict,dfs
+from OpenDriveMap.dom_tool import sub2dict,Counter
 
 from OpenDriveMap.planView import PlanView
 
@@ -67,6 +67,16 @@ class LaneLink:
         self.ptr=None
     def setPtr(self,ptr):
         self.ptr=ptr
+
+class Overlap_junction_lane:
+    def __init__(self,junction,lane):
+        self.kind="junction_with_lane"
+        junction.overlap_junction_lanes.append(self)
+        lane.overlap_junction_lane=self
+        self.junction=junction
+        self.lane=lane
+        self.ApolloName='overlap_junction_I0_J'+junction.ApolloId+'_'+lane.ApolloName
+
 class Lane:
     def __init__(self,node):
         #dfs(node,1)
@@ -81,6 +91,7 @@ class Lane:
         self.right_neighbor_reverse_lane=None
         self.right_neighbor_forward_lane=None
         self.junction=None
+        self.overlap_junction_lane=None
         if len(linkList)==1:
             links=linkList[0]
             if len(links.getElementsByTagName('predecessor'))==1:
@@ -117,7 +128,11 @@ class Lane:
         if successor not in self.ApolloSuccessors:
             self.ApolloSuccessors.append(successor)
 
-    def parse(self,curRoad,preLink,sucLink,leftLane,rightLane,junction):
+    def parse(self,curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter):
+        self.ApolloId=laneCounter.getId()
+        self.ApolloName='lane_'+self.ApolloId
+        # self.ApolloName='lane_'+curRoad.id+"00"+self.id
+        # self.ApolloName=self.ApolloName.replace("-", "9")
         if int(self.id)>0:
             self.forward=-1
             preLink,sucLink=sucLink,preLink     #swap
@@ -126,9 +141,11 @@ class Lane:
         else:
             self.forward=1
 
-        self.junction=junction
+        self.junction=curRoad.junction
+        if self.junction is not None:
+            map.addOverlap(Overlap_junction_lane(self.junction,self))
         self.road=curRoad
-        self.ApolloName=curRoad.ApolloName+'_lane_'+self.id
+        
         if self.predecessor is not None:
             if preLink.elementType!='road':
                 log.error("parse: lane id:"+self.ApolloName+" should have one road as pre")
@@ -231,7 +248,7 @@ class Lanes:
         if id!='.':
             log.error("cannot find id:"+id)
         return None
-    def parse(self,curRoad,preLink,sucLink,junction):#当前road，当前road的前驱，当前road的后继
+    def parse(self,curRoad,preLink,sucLink,map,laneCounter):#当前road，当前road的前驱，当前road的后继
         lis=list(self.lanes)
         lis.append(".")
         for i in range(len(lis)):
@@ -247,7 +264,7 @@ class Lanes:
             else:
                 leftLane=self.getLaneById(lis[i-1])
                 rightLane=self.getLaneById(lis[i+1])
-            lane.parse(curRoad,preLink,sucLink,leftLane,rightLane,junction)
+            lane.parse(curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter)
     def print(self):
         for lane in self.lanes:
             lane.print()
@@ -311,8 +328,9 @@ class Road:
         #</debug>
         return self.lanes.getLaneById(id)
     
-    def parse(self,map):
-        self.ApolloName='road_'+self.id
+    def parse(self,map,laneCounter,id):
+        self.ApolloId=str(id)
+        self.ApolloName='road_'+self.ApolloId
         if self.junction is not None:
             self.junction=map.findJunctionById(self.junction)
         if self.predecessor is not None:
@@ -332,7 +350,7 @@ class Road:
             else:
                 log.warning("unknown link type")
 
-        self.lanes.parse(self,self.predecessor,self.successor,self.junction)
+        self.lanes.parse(self,self.predecessor,self.successor,map,laneCounter)
         self.planView.parse(map)
     def print(self):
         print(self.ApolloName)
@@ -347,8 +365,11 @@ class Roads:
             self.roads[id]=Road(node)
 
     def parse(self,map):
+        laneCounter=Counter()
+        id=0
         for road in self.roads.values():
-            road.parse(map)
+            road.parse(map,laneCounter,id)
+            id+=1
         
     def print(self):
         for road in self.roads.values():
