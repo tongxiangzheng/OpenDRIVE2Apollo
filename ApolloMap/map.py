@@ -103,9 +103,6 @@ class ApolloMap:
             log.error("unknown forward")
             
 
-
-            
-            "continue"
         if lane.type=='shoulder':
             dist.type=dist.LaneType.SHOULDER
         elif lane.type=='border':
@@ -121,7 +118,8 @@ class ApolloMap:
         elif lane.type=='parking':
             dist.type=dist.LaneType.PARKING
         elif lane.type=='median':
-            log.warning('translate:lane:not support lane type:median')
+            #log.warning('translate:lane:not support lane type:median')
+            dist.type=dist.LaneType.SHOULDER
         elif lane.type=='biking':
             dist.type=dist.LaneType.BIKING
         elif lane.type=='sidewalk':
@@ -169,24 +167,26 @@ class ApolloMap:
             
          
          
-    def setLaneFromRoad(self,openDriveRoad):
+    def setLaneFromLanesSection(self,openDriveRoad,lanes):
         left="1"
         leftOffsetsDict=OffsetsDict()
-        while left in openDriveRoad.lanes.lanes:
-            lane=openDriveRoad.lanes.lanes[left]
+        while left in lanes:
+            lane=lanes[left]
             self.setLaneFromLane(lane,openDriveRoad.planView,leftOffsetsDict)
             leftOffsetsDict.addOffsets(lane.widthOffsets,1)
             left=str(int(left)+1)
         right="-1"
         rightOffsetsDict=OffsetsDict()
-        while right in openDriveRoad.lanes.lanes:
-            lane=openDriveRoad.lanes.lanes[right]
+        while right in lanes:
+            lane=lanes[right]
             self.setLaneFromLane(lane,openDriveRoad.planView,rightOffsetsDict)
             rightOffsetsDict.addOffsets(lane.widthOffsets,-1)
             right=str(int(right)-1)
-        
-        #for lane in openDriveRoad.lanes.lanes.values():
-        #    self.setLaneFromLane(lane,openDriveRoad.planView,OffsetsDict())
+    def setLaneFromRoad(self,openDriveRoad):
+        left="1"
+        leftOffsetsDict=OffsetsDict()
+        for lanes in openDriveRoad.lanes.lanesSection:
+            self.setLaneFromLanesSection(openDriveRoad,lanes)
 
     def setLane(self,openDriveMap):
         for road in openDriveMap.roads.roads.values():
@@ -198,10 +198,11 @@ class ApolloMap:
             distRoad.id.id=road.ApolloName
             section=distRoad.section.add()
             section.id.id="1"
-            for lane in road.lanes.lanes.values():
-                distLane=section.lane_id.add()
-                distLane.id=lane.ApolloName
-                "continue"
+            for lanes in road.lanes.lanesSection:
+                for lane in lanes.values():
+                    distLane=section.lane_id.add()
+                    distLane.id=lane.ApolloName
+                    "continue"
             if road.junction is not None:
                 distRoad.junction_id.id=road.junction.ApolloName
             #distRoad.type=distRoad.Type.CITY_ROAD

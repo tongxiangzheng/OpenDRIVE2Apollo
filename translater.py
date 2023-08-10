@@ -5,19 +5,23 @@ import ApolloMap.map
 #import xml.dom.minidom
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 
-doc=xml.dom.minidom.parse("../../OpenDrive-maps-from-CARLA/carla_Town01_Opt.xodr")
+#mapPath="../../OpenDrive-maps-from-CARLA/carla_Town10HD_Opt.xodr"
+mapPath="../../OpenDrive-maps-from-CARLA/carla_Town10HD.xodr"
+doc=xml.dom.minidom.parse(mapPath)
 openDriveMap=OpenDriveMap.map.OpenDriveMap(doc)
 #openDriveMap.print()
 ApolloMap=ApolloMap.map.ApolloMap()
 ApolloMap.parse_from_OpenDrive(openDriveMap)
 
-with open("01.txt", "w",encoding='utf-8') as f:
+with open("mapData/10HD.txt", "w",encoding='utf-8') as f:
   print(ApolloMap.map,file=f)
+with open("mapData/10HD.bin", "wb") as f:
+  f.write(ApolloMap.map.SerializeToString())
 
-with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin", "wb") as f:
-  f.write(ApolloMap.map.SerializeToString())
-with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin", "wb") as f:
-  f.write(ApolloMap.map.SerializeToString())
+#with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin", "wb") as f:
+#  f.write(ApolloMap.map.SerializeToString())
+#with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin", "wb") as f:
+#  f.write(ApolloMap.map.SerializeToString())
 
 
 

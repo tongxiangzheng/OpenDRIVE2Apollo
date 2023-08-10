@@ -2,13 +2,20 @@ from loguru import logger as log
 from OpenDriveMap.dom_tool import sub2dict,dfs
 
 class LaneLink:
-    def __init__(self,node):
+    def __init__(self,node,contactPoint):
         self.lane_from=node.getAttribute('from')
         #from是关键词 :(
         self.lane_to=node.getAttribute('to')
-    def parse(self,map,incomingRoad,connectingRoad):
-        self.lane_from_ptr=incomingRoad.getLaneById(self.lane_from)
-        self.lane_to_ptr=connectingRoad.getLaneById(self.lane_to)
+        self.contactPoint_from=None
+        self.contactPoint_to=contactPoint
+    def parse(self,map,incomingRoad,connectingRoad,junction):
+        self.contactPoint_from=incomingRoad.checkContactPoint(junction)
+        self.lane_from_ptr=incomingRoad.getLaneById(self.lane_from,self.contactPoint_from)
+        if self.lane_from_ptr is None:
+            log.warning("have no lane link from lane: "+incomingRoad.id+'_'+self.lane_from)
+        self.lane_to_ptr=connectingRoad.getLaneById(self.lane_to,self.contactPoint_to)
+        if self.lane_to_ptr is None:
+            log.warning("have no lane link to lane: "+connectingRoad.id+'_'+self.lane_to)
 class Connection:
     def __init__(self,node):
         self.id=node.getAttribute('id')
@@ -20,8 +27,8 @@ class Connection:
         #log.info("connection id "+str(self.id))
         self.laneLinks=[]
         for laneLink in node.getElementsByTagName('laneLink'):
-            self.laneLinks.append(LaneLink(laneLink))
-    def parse(self,map):
+            self.laneLinks.append(LaneLink(laneLink,self.contactPoint))
+    def parse(self,map,junction):
         self.incomingRoad_ptr=map.findRoadById(self.incomingRoad)
         self.connectingRoad_ptr=map.findRoadById(self.connectingRoad)
         if self.incomingRoad_ptr is None:
@@ -30,7 +37,7 @@ class Connection:
             log.error("junction.connection:cannot find road")
         
         for laneLink in self.laneLinks:
-            laneLink.parse(map,self.incomingRoad_ptr,self.connectingRoad_ptr)
+            laneLink.parse(map,self.incomingRoad_ptr,self.connectingRoad_ptr,junction)
 class Controller:
     def __init__(self,node):
         self.id=node.getAttribute('id')
@@ -142,7 +149,7 @@ class Junction:
         self.ApolloId=str(id)
         self.ApolloName="J_"+self.ApolloId
         for connection in self.connections:
-            connection.parse(map)
+            connection.parse(map,self)
 
 class Junctions:
     def __init__(self,nodeList):

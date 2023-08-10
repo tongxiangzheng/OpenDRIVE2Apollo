@@ -41,8 +41,8 @@ class Curve:
 
         self.points=[]
         self.lines=[]
+        s=PlanView.geometrys[0].s
         p=0
-        s=0
         while p<len(PlanView.geometrys):
             geometry=PlanView.geometrys[p]
             if s>geometry.length+geometry.s:
