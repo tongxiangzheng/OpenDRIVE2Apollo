@@ -93,55 +93,25 @@ class Junction:
     def getConnectingLane(self,road,lane):
         ans=[]
         for connection in self.connections:
-            
-            #if road.id=='0' and lane.id=='1':
-                #log.info("connection id: "+connection.id+' '+connection.incomingRoad)
             if connection.incomingRoad_ptr==road:
-                #if road.id=='0' and lane.id=='1':
-                    #log.info("now")
                 for laneLink in connection.laneLinks:
-                    #if road.id=='0' and lane.id=='1':
-                        #log.info("lanelink : "+laneLink.lane_from+' '+laneLink.lane_to)
                     if laneLink.lane_from_ptr==lane:
-                        #if road.id=='0' and lane.id=='1':
-                            #log.info("now2")
                         ans.append(laneLink.lane_to_ptr)
             if connection.connectingRoad_ptr==road:
-                #if road.id=='0' and lane.id=='1':
-                    #log.info("now")
                 for laneLink in connection.laneLinks:
-                    #if road.id=='0' and lane.id=='1':
-                        #log.info("lanelink : "+laneLink.lane_from+' '+laneLink.lane_to)
                     if laneLink.lane_to_ptr==lane:
-                        #if road.id=='0' and lane.id=='1':
-                            #log.info("now2")
                         ans.append(laneLink.lane_from_ptr)
         return ans
     def getIncomingLane(self,road,lane):
         ans=[]
         for connection in self.connections:
-            
-            #if road.id=='0' and lane.id=='1':
-                #log.info("connection id: "+connection.id+' '+connection.incomingRoad)
             if connection.incomingRoad_ptr==road:
-                #if road.id=='0' and lane.id=='1':
-                    #log.info("now")
                 for laneLink in connection.laneLinks:
-                    #if road.id=='0' and lane.id=='1':
-                        #log.info("lanelink : "+laneLink.lane_from+' '+laneLink.lane_to)
                     if laneLink.lane_from_ptr==lane:
-                        #if road.id=='0' and lane.id=='1':
-                            #log.info("now2")
                         ans.append(laneLink.lane_to_ptr)
             if connection.connectingRoad_ptr==road:
-                #if road.id=='0' and lane.id=='1':
-                    #log.info("now")
                 for laneLink in connection.laneLinks:
-                    #if road.id=='0' and lane.id=='1':
-                        #log.info("lanelink : "+laneLink.lane_from+' '+laneLink.lane_to)
                     if laneLink.lane_to_ptr==lane:
-                        #if road.id=='0' and lane.id=='1':
-                            #log.info("now2")
                         ans.append(laneLink.lane_from_ptr)
         return ans
     

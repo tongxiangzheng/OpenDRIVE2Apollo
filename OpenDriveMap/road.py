@@ -6,8 +6,12 @@ from OpenDriveMap.planView import PlanView
 #import traceback
 
 class RoadLink:
-    def __init__(self,node):
+    def __init__(self,node,type='node'):
         #print(node)
+        if type != 'node':
+            self.elementType='road'
+            self.sectionPtr=node
+            return
         self.kind=node.getElementsByTagName('name')
         self.elementType=node.getAttribute('elementType')
         self.ptr=None
@@ -18,9 +22,16 @@ class RoadLink:
             self.elementId=node.getAttribute('elementId')
         else:
             log.warning("unknown link type")
-    def setPtr(self,ptr):
-        self.ptr=ptr
-
+    def setSectionByRoad(self,road):
+        self.sectionPtr=road.getLaneSection(self.contactPoint)
+    def setJunction(self,ptr):
+        self.junctionPtr=ptr
+    def print(self):
+        print(self.elementType)
+        if self.elementType=='road':
+            print(self.sectionPtr)
+        else:
+            print(self.junctionPtr)
 class Speed:
     def __init__(self,node):
         self.max=node.getAttribute('max')
@@ -29,7 +40,9 @@ class Speed:
 class Type:
     def __init__(self,node):
         self.type=node.getAttribute('type')
-        self.speed=Speed(node.getElementsByTagName('speed')[0])
+        speedNodes=node.getElementsByTagName('speed')
+        if len(speedNodes)==1:
+            self.speed=Speed(speedNodes[0])
         
     
 class Offset:
@@ -52,6 +65,8 @@ class Offsets:
         for node in nodeList:
              self.offsets.append(Offset(node))
     def getOffset(self,s):
+        if len(self.offsets)==0:
+            return 0
         p=0
         for i in range(len(self.offsets)):
             offset=self.offsets[i]
@@ -85,6 +100,12 @@ class Lane:
         #dfs(node,1)
         self.id=node.getAttribute('id')
         self.type=node.getAttribute('type')
+        
+        if int(self.id)>0:
+            self.forward=-1
+        else:
+            self.forward=1
+            
         subDict=sub2dict(node)
         linkList=subDict['link']
         self.ApolloPredecessors=[]
@@ -144,21 +165,18 @@ class Lane:
     def parse(self,curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter):
         self.ApolloId=laneCounter.getId()
         
-        #self.ApolloName='lane_'+self.ApolloId
+        self.ApolloName='lane_'+self.ApolloId
         self.fullName='lane_'+curRoad.id+"_"+self.id
-        self.ApolloName=self.fullName
-        #log.debug("parsing lane "+curRoad.id+"_"+self.id)
+        #self.ApolloName=self.fullName
+        #log.debug("parsing lane "+self.fullName)
         
         #self.ApolloName='lane_'+curRoad.id+"_"+self.id
         # self.ApolloName=self.ApolloName.replace("-", "9")
         
-        if int(self.id)>0:
-            self.forward=-1
+        if self.forward<0:
             preLink,sucLink=sucLink,preLink     #swap
             #leftLane,rightLane=rightLane,leftLane
             self.predecessor,self.successor=self.successor,self.predecessor
-        else:
-            self.forward=1
 
         self.junction=curRoad.junction
         if self.junction is not None:
@@ -171,20 +189,20 @@ class Lane:
             else:
                 self.left_neighbor_forward_lane=leftLane
         if rightLane is not None:
-            if int(self.id)*int(rightLane.id)<0:
+            if self.forward*rightLane.forward<0:
                 self.right_neighbor_reverse_lane=rightLane
             else:
                 self.right_neighbor_forward_lane=rightLane
 
         if self.predecessor is not None:
             if preLink is not None and preLink.elementType=='road':
-                preRoad=preLink.ptr
-                predecessor=preRoad.getLaneByLaneLink(self.predecessor,preLink.contactPoint)
+                preSection=preLink.sectionPtr
+                predecessor=preSection.getLaneByLaneLink(self.predecessor)
                 if predecessor is not None:
                     self.addPredecessor(predecessor)
-                    #if self.junction is not None:
+                    if self.junction is not None:
                         #log.debug(predecessor.ApolloName+" add (maybe)suc lane:"+self.ApolloName+" as "+preLink.contactPoint)
-                    #    predecessor.addConnect(self,preLink.contactPoint)
+                        predecessor.addConnect(self,preLink.contactPoint)
                 else:
                     log.warning(self.fullName+": predecessor lane is none")
                     print(self.predecessor.id,self.successor.id)
@@ -193,7 +211,7 @@ class Lane:
                 
         else:
             if preLink is not None and preLink.elementType=='junction':
-                preJunction=preLink.ptr
+                preJunction=preLink.junctionPtr
                 predecessors=preJunction.getIncomingLane(curRoad,self)
                 for predecessor in predecessors:
                     if predecessor is None:
@@ -206,8 +224,8 @@ class Lane:
 
         if self.successor is not None:
             if sucLink is not None and sucLink.elementType=='road':
-                sucRoad=sucLink.ptr
-                successor=sucRoad.getLaneByLaneLink(self.successor,sucLink.contactPoint)
+                sucSection=sucLink.sectionPtr
+                successor=sucSection.getLaneByLaneLink(self.successor)
                 if successor is not None:
                     self.addSuccessor(successor)
                     if self.junction is not None:
@@ -221,7 +239,7 @@ class Lane:
                 
         else:
             if sucLink is not None and sucLink.elementType=='junction':
-                sucJunction=sucLink.ptr
+                sucJunction=sucLink.junctionPtr
                 successors=sucJunction.getConnectingLane(curRoad,self)
                 for successor in successors:
                     if successor is None:
@@ -238,83 +256,25 @@ class Lane:
             print("    predecessor:"+self.predecessor.ptr.ApolloName)
         if self.successor is not None:
             print("    successor:"+self.successor.ptr.ApolloName)
-  
-class Lanes:
+
+class LanesSection:
     def __init__(self,node):
-        subDicts=sub2dict(node)
-        self.laneOffsets=Offsets()
-        self.lanesSection=[]
-        self.road=None
-        for laneSection in subDicts['laneSection']:
-            subDict=sub2dict(laneSection)
-            self.laneOffsets.addOffsets(subDict['laneOffset'])
-            thisLanes=dict()
-        
+        self.lanes=dict()
+        subDict=sub2dict(node)
 
-            leftList=subDict['left']
-            if len(leftList)==1:
-                lanes=leftList[0].getElementsByTagName('lane')
-                for lane in lanes:
-                    id=lane.getAttribute('id')
-                    thisLanes[id]=Lane(lane)
-            elif len(leftList)>1:
-                log.error("lane:leftList size error: len=",len(leftList))
-
-            # centerList=subDict['center']
-            # if len(centerList)==1:
-            #     lanes=centerList[0].getElementsByTagName('lane')
-            #     for lane in lanes:
-            #         id=lane.getAttribute('id')
-            #         self.lanes[id]=Lane(lane)
-            # elif len(centerList)>1:
-            #     log.error("lane:centerList size error: len=",len(leftList))
-
-            rightList=subDict['right']
-            if len(rightList)==1:
-                lanes=rightList[0].getElementsByTagName('lane')
-                for lane in lanes:
-                    id=lane.getAttribute('id')
-                    thisLanes[id]=Lane(lane)
-            elif len(rightList)>1:
-                log.error("lane:rightList size error: len=",len(rightList))
-            self.lanesSection.append(thisLanes)
-
-    def getLaneById(self,i,id):
-        if id in self.lanesSection[i]:
-            return self.lanesSection[i][id]
-        if id!='.':
-            log.error(" cannot find id:"+i+'_'+id)
-            #traceback.print_stack()
-        return None
+        leftList=subDict['left']
+        if len(leftList)==1:
+            lanes=leftList[0].getElementsByTagName('lane')
+            for lane in lanes:
+                id=lane.getAttribute('id')
+                self.lanes[id]=Lane(lane)
+        rightList=subDict['right']
+        if len(rightList)==1:
+            lanes=rightList[0].getElementsByTagName('lane')
+            for lane in lanes:
+                id=lane.getAttribute('id')
+                self.lanes[id]=Lane(lane)
     
-    def parse(self,curRoad,preLink,sucLink,map,laneCounter):#当前road，当前road的前驱，当前road的后继
-        self.road=curRoad
-        for i in range(len(self.lanesSection)):
-            lanes=self.lanesSection[i]
-            lis=list(lanes)
-            lis.append(".")
-            for j in range(len(lis)):
-                id=lis[j]
-                if id=='.':
-                    break
-                lane=self.getLaneById(i,id)
-                leftLane=None
-                rightLane=None
-                if int(id)>0:
-                    leftLane=self.getLaneById(i,lis[j+1]) #列表中id倒序，左侧车道id较小，所以在列表中较大下标位置
-                    rightLane=self.getLaneById(i,lis[j-1])
-                else:
-                    leftLane=self.getLaneById(i,lis[j-1])
-                    rightLane=self.getLaneById(i,lis[j+1])
-                lane.parse(curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter) #continue
-
-    def print(self):
-        for lane in self.lanes:
-            lane.print()
-
-class LaneSectionPtr:
-    def __init__(self,lanes):
-        self.lanes=lanes
     def getLaneById(self,id):
         if id in self.lanes:
             return self.lanes[id]
@@ -322,9 +282,73 @@ class LaneSectionPtr:
             log.error(" cannot find id:"+id)
             #traceback.print_stack()
         return None
+    def getLaneByLaneLink(self,laneLink):
+        return self.getLaneById(laneLink.id)
+    def parse(self,curRoad,preLink,sucLink,map,laneCounter):
+        lis=list(self.lanes)
+        lis.append(".")
+        for j in range(len(lis)):
+            id=lis[j]
+            if id=='.':
+                break
+            lane=self.getLaneById(id)
+            leftLane=None
+            rightLane=None
+            if lane.forward<0:
+                leftLane=self.getLaneById(lis[j+1]) #列表中id倒序，左侧车道id较小，所以在列表中较大下标位置
+                rightLane=self.getLaneById(lis[j-1])
+            else:
+                leftLane=self.getLaneById(lis[j-1])
+                rightLane=self.getLaneById(lis[j+1])
+            lane.parse(curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter)
+
+class Lanes:
+    def __init__(self,node):
+        subDicts=sub2dict(node)
+        self.laneOffsets=Offsets()
+        self.laneOffsets.addOffsets(subDicts['laneOffset'])
+        self.lanesSections=[]
+        self.road=None
+        for laneSection in subDicts['laneSection']:
+            self.lanesSections.append(LanesSection(laneSection))
+            
+
+    def getLaneById(self,i,id):
+        if id in self.lanesSections[i]:
+            return self.lanesSections[i].lanes[id]
+        if id!='.':
+            log.error(" cannot find id:"+i+'_'+id)
+            #traceback.print_stack()
+        return None
+    
+    def parse(self,curRoad,preLink,sucLink,map,laneCounter):#当前road，当前road的前驱，当前road的后继
+        self.road=curRoad
+        for i in range(len(self.lanesSections)):
+            lanesSections=self.lanesSections[i]
+            preSection=None
+            sucSection=None
+            if i==0:
+                preSection=preLink
+            else:
+                preSection=RoadLink(self.lanesSections[i-1],'section')
+                preSection.contactPoint='end'
+            if i+1==len(self.lanesSections):
+                sucSection=sucLink
+            else:
+                sucSection=RoadLink(self.lanesSections[i+1],'section')
+                sucSection.contactPoint='start'
+            lanesSections.parse(curRoad,preSection,sucSection,map,laneCounter)
+            
+    def print(self):
+        for lane in self.lanes:
+            lane.print()
 
 
 
+class Validity:
+    def __init__(self,node):
+        self.fromLane=node.getAttribute('fromLane')
+        self.toLane=node.getAttribute('toLane')
 
 class Siginal:
     def __init__(self,node):
@@ -333,7 +357,8 @@ class Siginal:
         self.dynamic=node.getAttribute('dynamic')
         subDict=sub2dict(node)
         validityList=subDict['validity']
-        
+        for validity in validityList:
+            self.validitys.append(Validity(validity))
     def parse(self,map):
         "continue"
 
@@ -345,6 +370,11 @@ class Signals:
     def parse(self,map):
         for siginal in self.siginals:
             siginal.parse(map)
+
+class SignalReferences:
+    def __init__(self,signalReferences):
+        "continue"
+        
 class Road:
     def __init__(self,node):
         self.name=node.getAttribute('name')
@@ -390,17 +420,23 @@ class Road:
         laneList=subDict['lanes']
         self.lanes=Lanes(laneList[0])
 
-        signalList=subDict['signals']
+        #signalList=subDict['signals']
 
-        if len(signalList)==1:
-            signals=signalList[0].getElementsByTagName('signal')
-            self.signals=Signals(signals)
+        # if len(signalList)==1:
+        #     signals=signalList[0].getElementsByTagName('signal')
+        #     self.signals=Signals(signals)
+
+
+        # if len(signalList)==1:
+        #     signalReferences=signalList[0].getElementsByTagName('signalReference')
+        #     self.signalReferences=SignalReferences(signalReferences)
+        
 
     def getLaneSection(self,contactPoint):
         if contactPoint=='start':
-            return LaneSectionPtr(self.lanes.lanesSection[0])
+            return self.lanes.lanesSections[0]
         elif contactPoint=='end':
-            return LaneSectionPtr(self.lanes.lanesSection[-1])
+            return self.lanes.lanesSections[-1]
         else:
             log.error("unknown contactPoint: "+contactPoint)
 
@@ -437,17 +473,17 @@ class Road:
         if self.predecessor is not None:
             link=self.predecessor
             if link.elementType=='road':
-                link.setPtr(map.findRoadById(link.elementId))
+                link.setSectionByRoad(map.findRoadById(link.elementId))
             elif link.elementType=='junction':
-                link.setPtr(map.findJunctionById(link.elementId))
+                link.setJunction(map.findJunctionById(link.elementId))
             else:
                 log.warning("unknown link type")
         if self.successor is not None:
             link=self.successor
             if link.elementType=='road':
-                link.setPtr(map.findRoadById(link.elementId))
+                link.setSectionByRoad(map.findRoadById(link.elementId))
             elif link.elementType=='junction':
-                link.setPtr(map.findJunctionById(link.elementId))
+                link.setJunction(map.findJunctionById(link.elementId))
             else:
                 log.warning("unknown link type")
 

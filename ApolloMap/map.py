@@ -59,14 +59,19 @@ class ApolloMap:
                 distOverlap=dist.overlap_id.add()
                 distOverlap.id=overlap.ApolloName
 
-    def setSegment(self,planView,offsetsDict,segment):
-        curve=Curve(planView,offsetsDict,self.transformer)
+    def setSegment(self,planView,offsetsDict,segment,forward):
+        curve=Curve(planView,offsetsDict,forward,self.transformer)
         for point in curve.points:
             dictPoint=segment.line_segment.point.add()
             dictPoint.x=point.x
             dictPoint.y=point.y
             #log.info(str(point.x)+' '+str(point.y))
-
+        segment.s=0.0
+        segment.start_position.x=curve.points[0].x
+        segment.start_position.y=curve.points[0].y
+        segment.start_position.x=0.0
+        
+        segment.length=curve.getLength()
         #log.info("----------------------")
 
     def setLaneFromLane(self,lane,planView,offsetsDict):
@@ -74,30 +79,30 @@ class ApolloMap:
         dist.id.id=lane.ApolloName
         if lane.forward==1:
             segment=dist.left_boundary.curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment)
+            self.setSegment(planView,offsetsDict,segment,lane.forward)
 
             offsetsDict.addOffsets(lane.widthOffsets,-0.5)
             segment=dist.central_curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment)
+            self.setSegment(planView,offsetsDict,segment,lane.forward)
             offsetsDict.popOffsets()
 
             offsetsDict.addOffsets(lane.widthOffsets,-1)
             segment=dist.right_boundary.curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment)
+            self.setSegment(planView,offsetsDict,segment,lane.forward)
             offsetsDict.popOffsets()
 
         elif lane.forward==-1:
             segment=dist.right_boundary.curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment)
+            self.setSegment(planView,offsetsDict,segment,lane.forward)
 
             offsetsDict.addOffsets(lane.widthOffsets,0.5)
             segment=dist.central_curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment)
+            self.setSegment(planView,offsetsDict,segment,lane.forward)
             offsetsDict.popOffsets()
 
             offsetsDict.addOffsets(lane.widthOffsets,1)
             segment=dist.left_boundary.curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment)
+            self.setSegment(planView,offsetsDict,segment,lane.forward)
             offsetsDict.popOffsets()
         else:
             log.error("unknown forward")
@@ -106,15 +111,15 @@ class ApolloMap:
         if lane.type=='shoulder':
             dist.type=dist.LaneType.SHOULDER
         elif lane.type=='border':
-            log.warning('translate:lane:not support lane type:border')
+            dist.type=dist.LaneType.SHOULDER
         elif lane.type=='driving':
             dist.type=dist.LaneType.CITY_DRIVING
         elif lane.type=='stop':
-            log.warning('translate:lane:not support lane type:stop')
+            log.info('translate:lane:not support lane type:stop')
         elif lane.type=='none':
             dist.type=dist.LaneType.NONE
         elif lane.type=='restricted':
-            log.warning('translate:lane:not support lane type:restricted')
+            log.info('translate:lane:not support lane type:restricted')
         elif lane.type=='parking':
             dist.type=dist.LaneType.PARKING
         elif lane.type=='median':
@@ -125,25 +130,30 @@ class ApolloMap:
         elif lane.type=='sidewalk':
             dist.type=dist.LaneType.SIDEWALK
         elif lane.type=='curb':
-            log.warning('translate:lane:not support lane type:curb')
+            log.info('translate:lane:not support lane type:curb')
         elif lane.type=='exit':
-            log.warning('translate:lane:not support lane type:exit')
+            log.info('translate:lane:not support lane type:exit')
         elif lane.type=='entry':
-            log.warning('translate:lane:not support lane type:entry')
+            log.info('translate:lane:not support lane type:entry')
         elif lane.type=='onramp':
-            log.warning('translate:lane:not support lane type:onramp')
+            log.info('translate:lane:not support lane type:onramp')
         elif lane.type=='offRamp':
-            log.warning('translate:lane:not support lane type:offRamp')
+            log.info('translate:lane:not support lane type:offRamp')
         elif lane.type=='connectingRamp':
-            log.warning('translate:lane:not support lane type:connectingRamp')
+            log.info('translate:lane:not support lane type:connectingRamp')
+        elif lane.type=='bidirectional':
+            dist.type=dist.LaneType.CITY_DRIVING
         else:
-            log.warning('translate:lane:not known lane type:'+lane.type)
+            log.info('translate:lane:not known lane type:'+lane.type)
         
         if lane.overlap_junction_lane is not None:
             overlap=dist.overlap_id.add()
             overlap.id=lane.overlap_junction_lane.ApolloName
+        if lane.type!='bidirectional':
+            dist.direction=dist.LaneDirection.FORWARD
+        else:
+            dist.direction=dist.LaneDirection.BIDIRECTION
 
-        dist.direction=dist.LaneDirection.FORWARD
 
         for predecessor in lane.ApolloPredecessors:
             id=dist.predecessor_id.add()
@@ -167,26 +177,27 @@ class ApolloMap:
             
          
          
-    def setLaneFromLanesSection(self,openDriveRoad,lanes):
+    def setLaneFromLanesSection(self,openDriveRoad,lanes,midOffsets):
         left="1"
         leftOffsetsDict=OffsetsDict()
-        while left in lanes:
-            lane=lanes[left]
+        leftOffsetsDict.addOffsets(midOffsets,1)
+        while left in lanes.lanes:
+            lane=lanes.lanes[left]
             self.setLaneFromLane(lane,openDriveRoad.planView,leftOffsetsDict)
-            leftOffsetsDict.addOffsets(lane.widthOffsets,1)
+            leftOffsetsDict.addOffsets(lane.widthOffsets,-1*lane.forward)
             left=str(int(left)+1)
         right="-1"
         rightOffsetsDict=OffsetsDict()
-        while right in lanes:
-            lane=lanes[right]
+        rightOffsetsDict.addOffsets(midOffsets,1)
+        while right in lanes.lanes:
+            lane=lanes.lanes[right]
             self.setLaneFromLane(lane,openDriveRoad.planView,rightOffsetsDict)
-            rightOffsetsDict.addOffsets(lane.widthOffsets,-1)
+            rightOffsetsDict.addOffsets(lane.widthOffsets,-1*lane.forward)
             right=str(int(right)-1)
     def setLaneFromRoad(self,openDriveRoad):
-        left="1"
-        leftOffsetsDict=OffsetsDict()
-        for lanes in openDriveRoad.lanes.lanesSection:
-            self.setLaneFromLanesSection(openDriveRoad,lanes)
+        midOffsets=openDriveRoad.lanes.laneOffsets
+        for laneSection in openDriveRoad.lanes.lanesSections:
+            self.setLaneFromLanesSection(openDriveRoad,laneSection,midOffsets)
 
     def setLane(self,openDriveMap):
         for road in openDriveMap.roads.roads.values():
@@ -198,8 +209,8 @@ class ApolloMap:
             distRoad.id.id=road.ApolloName
             section=distRoad.section.add()
             section.id.id="1"
-            for lanes in road.lanes.lanesSection:
-                for lane in lanes.values():
+            for lanesSection in road.lanes.lanesSections:
+                for lane in lanesSection.lanes.values():
                     distLane=section.lane_id.add()
                     distLane.id=lane.ApolloName
                     "continue"

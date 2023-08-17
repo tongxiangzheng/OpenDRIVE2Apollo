@@ -19,10 +19,13 @@ class Point:
         self.x=float(x)
         self.y=float(y)
 
-        #self.x,self.y=transformer.transform(self.x,self.y)
+        self.x,self.y=transformer.transform(self.x,self.y)
 
         self.preLine=None
         self.sucLine=None
+    def reverse(self):
+        self.preLine,self.sucLine=self.sucLine,self.preLine
+        
 class Line:
     def __init__(self,prePoint,sucPoint):
         self.prePoint=prePoint
@@ -32,31 +35,41 @@ class Line:
         self.calcLength()
     def calcLength(self):
         self.length=sqrt((self.prePoint.x-self.sucPoint.x)**2+(self.prePoint.y-self.sucPoint.y)**2)
-
+    def reverse(self):
+        self.prePoint,self.sucPoint=self.sucPoint,self.prePoint
+        
 class Curve:
-    def __init__(self,PlanView,offsetsDict,transformer):
-        #-------------------
-        SIM_SPEED=10
-        #-------------------
-
+    def __init__(self,PlanView,offsetsDict,forward,transformer):
         self.points=[]
         self.lines=[]
         s=PlanView.geometrys[0].s
         p=0
+        pmark=False
         while p<len(PlanView.geometrys):
             geometry=PlanView.geometrys[p]
+            if pmark is True:
+                p+=1
+                pmark=False
+                continue
             if s>geometry.length+geometry.s:
                 s=geometry.length+geometry.s
-                p+=1
+                pmark=True
             #log.info(str(s)+" "+str(geometry.length+geometry.s))
-            direct=geometry.getDirect(s)
-            s+=SIM_SPEED
+            direct,nextL=geometry.getDirect(s,forward)
+            s+=nextL
             direct.offset(offsetsDict.getOffset(s))
             self.addPoint(Point(s,direct.x,direct.y,transformer))
+        # p-=1
+        # geometry=PlanView.geometrys[p]
+        # s=geometry.length+geometry.s
+        # direct,nextL=geometry.getDirect(s,forward)
+        # direct.offset(offsetsDict.getOffset(s))
+        # self.addPoint(Point(s,direct.x,direct.y,transformer))
         #for geometry in PlanView.geometrys:
             #self.addPoint(Point(geometry.s,geometry.x,geometry.y,transformer))
         #log.info("----------------------------------")
-        
+        if forward==-1:
+            self.reverse()
     def addPoint(self,point):
         self.points.append(point)
         if len(self.points)>=2:
@@ -66,3 +79,10 @@ class Curve:
         for line in self.lines:
             len+=line.length
         return len
+    def reverse(self):
+        for point in self.points:
+            point.reverse()
+        for line in self.lines:
+            line.reverse()
+        self.points.reverse()
+        self.lines.reverse()
