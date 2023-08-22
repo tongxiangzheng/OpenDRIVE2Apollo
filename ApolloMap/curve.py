@@ -8,10 +8,10 @@ class OffsetsDict:
         self.offsetsList.append((offsets,coefficient))
     def popOffsets(self):
         self.offsetsList.pop()
-    def getOffset(self,s):
+    def getOffset(self,s,lim):
         ans=0
         for offsets,coefficient in self.offsetsList:
-            ans=ans+offsets.getOffset(s)*coefficient
+            ans=ans+offsets.getOffset(s,lim)*coefficient
         return ans
 class Point:
     def __init__(self,s,x,y,transformer):
@@ -39,36 +39,60 @@ class Line:
         self.prePoint,self.sucPoint=self.sucPoint,self.prePoint
         
 class Curve:
-    def __init__(self,PlanView,offsetsDict,forward,transformer):
+    def __init__(self,PlanView,offsetsDict,lane,transformer):
         self.points=[]
         self.lines=[]
-        s=PlanView.geometrys[0].s
+        s=lane.s
         p=0
-        pmark=False
         while p<len(PlanView.geometrys):
             geometry=PlanView.geometrys[p]
-            if pmark is True:
+            if s<=geometry.s+geometry.length:
+                break
+            else:
                 p+=1
-                pmark=False
-                continue
+        debugLaneName='none'
+        if lane.fullName==debugLaneName:
+            print("---------")
+            print("lane: ",lane.s,lane.t)
+            print("len(PlanView.geometrys): ",len(PlanView.geometrys))
+        while p<len(PlanView.geometrys):
+            geometry=PlanView.geometrys[p]
+            if lane.fullName==debugLaneName:
+                print("s,p,t: ",s,p,lane.t)
+                print("planView: ",PlanView.geometrys[p].s,PlanView.geometrys[p].length)
             if s>geometry.length+geometry.s:
                 s=geometry.length+geometry.s
-                pmark=True
+                p+=1
+                continue
+            if s>=lane.t:
+                break
             #log.info(str(s)+" "+str(geometry.length+geometry.s))
-            direct,nextL=geometry.getDirect(s,forward)
+            direct,nextL=geometry.getDirect(s)
+            direct.offset(offsetsDict.getOffset(s,'+'))
+            if lane.fullName==debugLaneName:
+                offsetsDict.offsetsList[0][0].print()
+                print("s: ",s)
+                print("offsets: ",offsetsDict.offsetsList[0][0].getOffset(s,'+'))
+                print("offsets: ",offsetsDict.getOffset(s,'+'))
             s+=nextL
-            direct.offset(offsetsDict.getOffset(s))
             self.addPoint(Point(s,direct.x,direct.y,transformer))
-        # p-=1
-        # geometry=PlanView.geometrys[p]
-        # s=geometry.length+geometry.s
-        # direct,nextL=geometry.getDirect(s,forward)
-        # direct.offset(offsetsDict.getOffset(s))
-        # self.addPoint(Point(s,direct.x,direct.y,transformer))
+        if p==len(PlanView.geometrys):
+            p-=1
+
+        geometry=PlanView.geometrys[p]
+        s=lane.t
+        # if lane.fullName=='lane_782_0_-1':
+        #     print("s,p,t: ",s,p,lane.t)
+        #     print("planView: ",PlanView.geometrys[p].s,PlanView.geometrys[p].length)
+        direct,nextL=geometry.getDirect(s)
+        direct.offset(offsetsDict.getOffset(s,'-'))
+        #if lane.fullName=='lane_782_0_-3':
+        #    print("direct: ",direct.x,direct.y)
+        self.addPoint(Point(s,direct.x,direct.y,transformer))
         #for geometry in PlanView.geometrys:
             #self.addPoint(Point(geometry.s,geometry.x,geometry.y,transformer))
         #log.info("----------------------------------")
-        if forward==-1:
+        if lane.forward==-1:
             self.reverse()
     def addPoint(self,point):
         self.points.append(point)

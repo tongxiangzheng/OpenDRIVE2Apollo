@@ -59,8 +59,8 @@ class ApolloMap:
                 distOverlap=dist.overlap_id.add()
                 distOverlap.id=overlap.ApolloName
 
-    def setSegment(self,planView,offsetsDict,segment,forward):
-        curve=Curve(planView,offsetsDict,forward,self.transformer)
+    def setSegment(self,lane,planView,offsetsDict,segment,forward):
+        curve=Curve(planView,offsetsDict,lane,self.transformer)
         for point in curve.points:
             dictPoint=segment.line_segment.point.add()
             dictPoint.x=point.x
@@ -79,30 +79,30 @@ class ApolloMap:
         dist.id.id=lane.ApolloName
         if lane.forward==1:
             segment=dist.left_boundary.curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
 
             offsetsDict.addOffsets(lane.widthOffsets,-0.5)
             segment=dist.central_curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
             offsetsDict.popOffsets()
 
             offsetsDict.addOffsets(lane.widthOffsets,-1)
             segment=dist.right_boundary.curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
             offsetsDict.popOffsets()
 
         elif lane.forward==-1:
             segment=dist.right_boundary.curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
 
             offsetsDict.addOffsets(lane.widthOffsets,0.5)
             segment=dist.central_curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
             offsetsDict.popOffsets()
 
             offsetsDict.addOffsets(lane.widthOffsets,1)
             segment=dist.left_boundary.curve.segment.add()
-            self.setSegment(planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
             offsetsDict.popOffsets()
         else:
             log.error("unknown forward")
@@ -177,25 +177,30 @@ class ApolloMap:
             
          
          
-    def setLaneFromLanesSection(self,openDriveRoad,lanes,midOffsets):
+    def setLaneFromLanesSection(self,openDriveRoad,lanesSection,midOffsets):
         left="1"
         leftOffsetsDict=OffsetsDict()
         leftOffsetsDict.addOffsets(midOffsets,1)
-        while left in lanes.lanes:
-            lane=lanes.lanes[left]
+        while left in lanesSection.lanes:
+            lane=lanesSection.lanes[left]
             self.setLaneFromLane(lane,openDriveRoad.planView,leftOffsetsDict)
             leftOffsetsDict.addOffsets(lane.widthOffsets,-1*lane.forward)
             left=str(int(left)+1)
         right="-1"
         rightOffsetsDict=OffsetsDict()
         rightOffsetsDict.addOffsets(midOffsets,1)
-        while right in lanes.lanes:
-            lane=lanes.lanes[right]
+        while right in lanesSection.lanes:
+            lane=lanesSection.lanes[right]
             self.setLaneFromLane(lane,openDriveRoad.planView,rightOffsetsDict)
             rightOffsetsDict.addOffsets(lane.widthOffsets,-1*lane.forward)
             right=str(int(right)-1)
     def setLaneFromRoad(self,openDriveRoad):
         midOffsets=openDriveRoad.lanes.laneOffsets
+        # if openDriveRoad.id=='782':
+        #     print("midOffsets:")
+        #     midOffsets.print()
+        #     print("0: ",midOffsets.getOffset(0))
+            
         for laneSection in openDriveRoad.lanes.lanesSections:
             self.setLaneFromLanesSection(openDriveRoad,laneSection,midOffsets)
 

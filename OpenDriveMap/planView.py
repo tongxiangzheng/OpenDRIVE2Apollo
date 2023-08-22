@@ -5,6 +5,67 @@ from numpy import pi,sqrt
 import matplotlib.pyplot as plt
 from pyclothoids import Clothoid
 
+class Offset:
+    def __init__(self,node):
+        if node.hasAttribute('s'):
+            self.s=float(node.getAttribute('s'))
+        elif node.hasAttribute('sOffset'):
+            self.s=float(node.getAttribute('sOffset'))
+        else:
+            log.error("offset parse error")
+    
+        self.a=float(node.getAttribute('a'))
+        self.b=float(node.getAttribute('b'))
+        self.c=float(node.getAttribute('c'))
+        self.d=float(node.getAttribute('d'))
+
+class Offsets:
+    def __init__(self):
+        self.offsets=[]
+        self.s=0
+    def addOffsets(self,nodeList):
+        for node in nodeList:
+             self.offsets.append(Offset(node))
+        last=-1000000
+        for offset in self.offsets:
+            if last>offset.s:
+                log.warning("offset order error")
+            last=offset.s
+    def setStart(self,s):
+        self.s=s
+    def getOffset(self,s,lim):
+        s-=self.s
+        # if lim=='+':
+        #     s+=0.1
+        # elif lim=='-':
+        #     s-=0.1
+        if len(self.offsets)==0:
+            log.warning("len(self.offsets)==0")
+            return 0
+        p=0
+        for i in range(len(self.offsets)):
+            offset=self.offsets[i]
+            if offset.s==s:
+                if lim=='-':
+                    break
+            if offset.s>s:
+                break
+            p=i
+        offset=self.offsets[p]
+        s=s-offset.s
+        # if lim=='+':
+        #     s-=0.1
+        # elif lim=='-':
+        #     s+=0.1
+        #return a+b*s+c*s^2+d*s^3
+        return offset.a+s*(offset.b+s*(offset.c+s*offset.d))
+    def print(self):
+        print(self)
+        print("len: ",len(self.offsets))
+        for offset in self.offsets:
+            print("s: "+str(offset.s+self.s)+" a: "+str(offset.a))
+
+        
 class Direct:
     def __init__(self,x,y,hdg):
         self.x=x
@@ -19,8 +80,6 @@ class Direct:
     def setHdg(self,hdg):
         self.directX=math.cos(hdg)
         self.directY=math.sin(hdg)
-
-        
 class Geometry:
     def __init__(self,node):
         #dfs(node,1)
@@ -46,7 +105,7 @@ class Geometry:
 
         else:
             log.warning("Geometry:unknown geometry type")
-    def getDirect(self,s,forward):
+    def getDirect(self,s):
         s-=self.s
         direct=Direct(self.x,self.y,self.hdg)
         nextL=10.0
@@ -90,6 +149,9 @@ class PlanView:
         nodelist=node.getElementsByTagName('geometry')
         for node in nodelist:
             self.geometrys.append(Geometry(node))
+    def getLength(self):
+        last=self.geometrys[-1]
+        return last.s+last.length
     def parse(self,map):
         for geometry in self.geometrys:
             geometry.parse(map)
