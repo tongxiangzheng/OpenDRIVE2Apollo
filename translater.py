@@ -7,8 +7,7 @@ import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 def translate(fromPath,toPath):
   doc=xml.dom.minidom.parse(fromPath)
   openDriveMap=OpenDriveMap.map.OpenDriveMap(doc)
-  apolloMap=ApolloMap.map.ApolloMap()
-  apolloMap.parse_from_OpenDrive(openDriveMap)
+  apolloMap=ApolloMap.map.ApolloMap(openDriveMap)
   with open(toPath+'.txt', "w",encoding='utf-8') as f:
     print(apolloMap.map,file=f)
   with open(toPath+'.bin', "wb") as f:
@@ -36,10 +35,16 @@ def tryAll():
   log.info("translate map 12")
   translate("../../OpenDrive-maps-from-CARLA/carla_Town12_Town12.xodr","mapData/12")
   
+def toComOpT(path):
+  translate(path,"C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map")
+  with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin", "wb") as fw:
+    with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin", "rb") as fr:
+      fw.write(fr.read())
 
+#tryAll()
+#translate("../../OpenDrive-maps-from-CARLA/carla_Town01.xodr","01")
+toComOpT("../../OpenDrive-maps-from-CARLA/carla_Town01.xodr")
 
-tryAll()
-#translate("../../OpenDrive-maps-from-CARLA/carla_Town04.xodr","01")
 
 #mapPath="../../OpenDrive-maps-from-CARLA/carla_Town03.xodr"
 #mapPath="../../OpenDrive-maps-from-CARLA/carla_Town11_Town11.xodr"
@@ -47,8 +52,7 @@ tryAll()
 #doc=xml.dom.minidom.parse(mapPath)
 #openDriveMap=OpenDriveMap.map.OpenDriveMap(doc)
 #openDriveMap.print()
-#ApolloMap=ApolloMap.map.ApolloMap()
-#ApolloMap.parse_from_OpenDrive(openDriveMap)
+#ApolloMap=ApolloMap.map.ApolloMap(openDriveMap)
 
 #with open("01.txt", "w",encoding='utf-8') as f:
 #  print(ApolloMap.map,file=f)

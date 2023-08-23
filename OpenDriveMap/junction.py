@@ -62,6 +62,7 @@ class Junction:
         self.connections=[]
         self.controllers=[]
         self.overlap_junction_lanes=[]
+        self.overlap_junction_signals=[]
         connectionList=subDict['connection']
         for connection in connectionList:
             self.connections.append(Connection(connection))

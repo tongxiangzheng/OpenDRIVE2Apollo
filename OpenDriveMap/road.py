@@ -1,5 +1,5 @@
 from loguru import logger as log
-from OpenDriveMap.dom_tool import sub2dict,Counter
+from OpenDriveMap.dom_tool import sub2dict,dfs,Counter
 
 from OpenDriveMap.planView import PlanView,Offsets
 from OpenDriveMap.signal import Signals
@@ -62,8 +62,9 @@ class Overlap_junction_lane:
         lane.overlap_junction_lane=self
         self.junction=junction
         self.lane=lane
-        self.ApolloName='overlap_junction_I0_J'+junction.ApolloId+'_'+lane.ApolloName
-
+    def getApolloName(self):
+        ApolloName='overlap_junction_I0_J'+self.junction.ApolloId+'_lane_'+self.lane.ApolloId
+        return ApolloName
 class Lane:
     def __init__(self,node):
         #dfs(node,1)
@@ -85,6 +86,7 @@ class Lane:
         self.right_neighbor_forward_lane=None
         self.junction=None
         self.overlap_junction_lane=None
+        self.overlap_signal_lanes=[]
         if len(linkList)==1:
             links=linkList[0]
             if len(links.getElementsByTagName('predecessor'))==1:
@@ -367,9 +369,9 @@ class Road:
         self.lanes=SanesSections(laneList[0])
 
         signalList=subDict['signals']
-
+        self.signals=None
         if len(signalList)==1:
-             self.signals=Signals(signalList[0],map)
+            self.signals=Signals(signalList[0],self,map)
 
 
         # if len(signalList)==1:
@@ -408,9 +410,9 @@ class Road:
             return 'start'
         if self.successor is not None and self.successor.elementType=='junction' and self.successor.elementId==junction.id:
             return 'end'
-        log.warning("cannot determine contactPoint")
+        log.warning("road: "+self.id+" cannot determine contactPoint from junction: "+junction.id)
         return None
-    def parse(self,map,laneCounter,id):
+    def parse(self,map,laneCounter,signalCounter,id):
         self.ApolloId=str(id)
         self.ApolloName='road_'+self.ApolloId
         if self.junction is not None:
@@ -434,6 +436,8 @@ class Road:
         self.roadLength=self.planView.getLength()
         self.lanes.parse(self,self.predecessor,self.successor,map,laneCounter,self.roadLength)
         self.planView.parse(map)
+        if self.signals is not None:
+            self.signals.parse(map,signalCounter)
     def print(self):
         print(self.ApolloName)
         self.lanes.print()
@@ -448,9 +452,10 @@ class Roads:
 
     def parse(self,map):
         laneCounter=Counter()
+        signalCounter=Counter()
         id=0
         for road in self.roads.values():
-            road.parse(map,laneCounter,id)
+            road.parse(map,laneCounter,signalCounter,id)
             id+=1
         
     def print(self):

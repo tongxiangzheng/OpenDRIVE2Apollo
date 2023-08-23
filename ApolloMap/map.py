@@ -4,13 +4,9 @@ import ApolloMap.proto_lib.modules.map.proto.map_overlap_pb2 as map_overlap_pb2
 import pyproj
 from ApolloMap.curve import Curve,OffsetsDict
 class ApolloMap:
-    def __init__(self):
+    def __init__(self,openDriveMap):
         self.map=map_pb2.Map()
-        
-        self.sourceCrs=pyproj.CRS.from_proj4("+proj=utm +zone=32 +ellps=WGS84")
-            #if proj data is empty,use "+proj=utm +zone={} +ellps=WGS84" by default
-        self.distCrs=pyproj.CRS.from_proj4("+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
-       
+        self.parse_from_OpenDrive(openDriveMap)
         
     def setProjection(self,projText):
         if projText is not None:
@@ -55,9 +51,12 @@ class ApolloMap:
             dist=self.map.junction.add()
             dist.id.id=junction.ApolloName
             #self.setpolygon(dist,junction)
-            for overlap in junction.overlap_junction_lanes:
+            for overlap_junction_lane in junction.overlap_junction_lanes:
                 distOverlap=dist.overlap_id.add()
-                distOverlap.id=overlap.ApolloName
+                distOverlap.id=overlap_junction_lane.getApolloName()
+            for overlap_junction_signal in junction.overlap_junction_signals:
+                distOverlap=dist.overlap_id.add()
+                distOverlap.id=overlap_junction_signal.getApolloName()
 
     def setSegment(self,lane,planView,offsetsDict,segment,forward):
         curve=Curve(planView,offsetsDict,lane,self.transformer)
@@ -147,8 +146,12 @@ class ApolloMap:
             log.info('translate:lane:not known lane type:'+lane.type)
         
         if lane.overlap_junction_lane is not None:
-            overlap=dist.overlap_id.add()
-            overlap.id=lane.overlap_junction_lane.ApolloName
+            distOverlap=dist.overlap_id.add()
+            distOverlap.id=lane.overlap_junction_lane.getApolloName()
+        for overlap_signal_lane in lane.overlap_signal_lanes:
+            distOverlap=dist.overlap_id.add()
+            distOverlap.id=overlap_signal_lane.getApolloName()
+
         if lane.type!='bidirectional':
             dist.direction=dist.LaneDirection.FORWARD
         else:
@@ -222,30 +225,66 @@ class ApolloMap:
             if road.junction is not None:
                 distRoad.junction_id.id=road.junction.ApolloName
             #distRoad.type=distRoad.Type.CITY_ROAD
-            
+    def setSignal(self,openDriveMap):
+        for signal in openDriveMap.signals.values():
+            distSignal=self.map.signal.add()
+            distSignal.type=distSignal.Type.MIX_3_VERTICAL
+            distSignal.id.id=signal.ApolloName
+            for overlap_signal_lane in signal.overlap_signal_lanes:
+                distOverlap=distSignal.overlap_id.add()
+                distOverlap.id=overlap_signal_lane.getApolloName()
+            if signal.overlap_junction_signal is not None:
+                distOverlap=distSignal.overlap_id.add()
+                distOverlap.id=signal.overlap_junction_signal.getApolloName()
+                
+    def setOverlapLaneObject(self,distOverlap,lane):
+        distLane=distOverlap.object.add()
+        distLane.id.id=lane.ApolloName
+        distLane.lane_overlap_info.start_s=float(0)
+        distLane.lane_overlap_info.end_s=float(1)   #先这样填吧...
+        distLane.lane_overlap_info.is_merge=False
+
+    def setOverlapJunctionObject(self,distOverlap,junction):
+        distJunction=distOverlap.object.add()
+        distJunction.id.id=junction.ApolloName
+        distJunction.junction_overlap_info.CopyFrom(map_overlap_pb2.JunctionOverlapInfo())  #nt设计
+    
+    def setOverlapSignalObject(self,distOverlap,signal):
+        distSignal=distOverlap.object.add()
+        distSignal.id.id=signal.ApolloName
+        distSignal.signal_overlap_info.CopyFrom(map_overlap_pb2.SignalOverlapInfo())  #nt设计
+    
+    
     def setOverlap(self,openDriveMap):
         for overlap in openDriveMap.overlaps:
-            dist=self.map.overlap.add()
+            distOverlap=self.map.overlap.add()
             if overlap.kind=="junction_with_lane":
-                dist.id.id=overlap.ApolloName
+                distOverlap.id.id=overlap.getApolloName()
+                self.setOverlapJunctionObject(distOverlap,overlap.junction)
+                self.setOverlapLaneObject(distOverlap,overlap.lane)
 
-                distLane=dist.object.add()
-                distLane.id.id=overlap.lane.ApolloName
-                distLane.lane_overlap_info.start_s=float(0)
-                distLane.lane_overlap_info.end_s=float(1)   #先这样填吧...
-                distLane.lane_overlap_info.is_merge=False
+            elif overlap.kind=="signal_with_lane":
+                distOverlap.id.id=overlap.getApolloName()
+                self.setOverlapSignalObject(distOverlap,overlap.signal)
+                self.setOverlapLaneObject(distOverlap,overlap.lane)
 
-                distJunction=dist.object.add()
-                distJunction.id.id=overlap.junction.ApolloName
-                distJunction.junction_overlap_info.CopyFrom(map_overlap_pb2.JunctionOverlapInfo())  #nt设计
+            elif overlap.kind=="junction_with_signal":
+                distOverlap.id.id=overlap.getApolloName()
+                self.setOverlapJunctionObject(distOverlap,overlap.junction)
+                self.setOverlapSignalObject(distOverlap,overlap.signal)
 
             else:
-                log.error("unknown overlap kind")
-    def parse_from_OpenDrive(self, openDriveMap):
+                log.error("unknown overlap kind: "+overlap.kind)
+    def parse_from_OpenDrive(self,openDriveMap):
+        self.sourceCrs=pyproj.CRS.from_proj4("+proj=utm +zone=32 +ellps=WGS84")
+            #if proj data is empty,use "+proj=utm +zone={} +ellps=WGS84" by default
+        self.distCrs=pyproj.CRS.from_proj4("+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+       
         self.setHeader(openDriveMap)
         #setCrossWalk(openDriveMap)
         self.setJunction(openDriveMap)
         self.setLane(openDriveMap)
         self.setRoad(openDriveMap)
+        self.setSignal(openDriveMap)
         self.setOverlap(openDriveMap)
 	
