@@ -34,16 +34,20 @@ def tryAll():
   translate("../../OpenDrive-maps-from-CARLA/carla_Town11_Town11.xodr","mapData/11")
   log.info("translate map 12")
   translate("../../OpenDrive-maps-from-CARLA/carla_Town12_Town12.xodr","mapData/12")
-  
-def toComOpT(path):
-  translate(path,"C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map")
-  with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin", "wb") as fw:
-    with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin", "rb") as fr:
+
+def cp(pathFrom,pathTo):
+  with open(pathTo, "wb") as fw:
+    with open(pathFrom, "rb") as fr:
       fw.write(fr.read())
+def toComOpT(path):
+  translate(path,"01")
+  cp("01.bin","C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin")
+  cp("01.bin","C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin")
+  
 
 #tryAll()
-#translate("../../OpenDrive-maps-from-CARLA/carla_Town01.xodr","01")
-toComOpT("../../OpenDrive-maps-from-CARLA/carla_Town01.xodr")
+#translate("../../OpenDrive-maps-from-CARLA/carla_Town05.xodr","01")
+toComOpT("../../OpenDrive-maps-from-CARLA/carla_Town04.xodr")
 
 
 #mapPath="../../OpenDrive-maps-from-CARLA/carla_Town03.xodr"

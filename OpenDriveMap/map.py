@@ -12,10 +12,11 @@ class OpenDriveMap:
         subDict=sub2dict(root)
         self.overlaps=[]
         self.signals=dict()
+        self.objects=[]
         
         self.header=header.Header(subDict['header'][0])
         self.roads=road.Roads(subDict['road'],self)
-        self.controllers=controller.Controllers(subDict['controller'])
+        #self.controllers=controller.Controllers(subDict['controller'])
         self.junctions=junction.Junctions(subDict['junction'])
         self.junctions.parse(self)
         self.roads.parse(self)

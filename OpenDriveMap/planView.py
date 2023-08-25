@@ -77,6 +77,10 @@ class Direct:
         offsetDirectY=self.directX
         self.x+=offset*offsetDirectX
         self.y+=offset*offsetDirectY
+    def forward(self,length):
+        self.x+=length*self.directX
+        self.y+=length*self.directY
+
     def setHdg(self,hdg):
         self.directX=math.cos(hdg)
         self.directY=math.sin(hdg)
@@ -105,16 +109,17 @@ class Geometry:
 
         else:
             log.warning("Geometry:unknown geometry type")
-    def getDirect(self,s):
+    def getDirect(self,s,laneLength):
         s-=self.s
         direct=Direct(self.x,self.y,self.hdg)
-        nextL=10.0
+        limit=0.001
+        nextL=limit
         if self.type=='line':
             #log.debug(str(direct.x)+" "+str(direct.y))
             #log.debug(str(direct.x)+" "+str(direct.y)+" "+str(direct.directX)+" "+str(direct.directY)+" "+str(s))
-            direct.x+=direct.directX*s
-            direct.y+=direct.directY*s
-            nextL=10.0
+            direct.forward(s)
+            #print(self.length/4)
+            nextL=laneLength/3
         elif self.type=='arc':
             radius=1/self.curvature
             arc=s/radius
@@ -123,14 +128,16 @@ class Geometry:
             direct.setHdg(self.hdg+arc)
             direct.offset(-radius)
             #print(radius)
-            nextL=abs(radius*0.02)
+            nextL=abs(radius*0.05)
+            nextL=min(nextL,laneLength/3)
         elif self.type=="spiral":
             direct.x=self.XList[int(s/self.len_per_point)]
             direct.y=self.YList[int(s/self.len_per_point)]
             arc=self.kd*s
             direct.setHdg(self.hdg+arc)
             nextL=self.len_per_point
-
+        
+        nextL=max(nextL,limit)
         return direct,nextL
     def parse(self,map):
         if self.type=="spiral":

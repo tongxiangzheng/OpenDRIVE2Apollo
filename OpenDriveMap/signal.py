@@ -20,7 +20,7 @@ class Overlap_junction_signal:
         self.junction=junction
         self.signal=signal
     def getApolloName(self):
-        ApolloName='overlap_junction_I0_J'+self.junction.ApolloId+'_0_'+self.signal.ApolloId
+        ApolloName='overlap_junction_I0_J'+self.junction.ApolloId+'_signal_'+self.signal.ApolloId+"_0"
         return ApolloName
 
 class Validity:
@@ -47,6 +47,8 @@ class Siginal:
         self.id=node.getAttribute('id')
         self.name=node.getAttribute('name')
         self.dynamic=node.getAttribute('dynamic')
+        self.s=float(node.getAttribute('s'))
+        self.t=float(node.getAttribute('t'))
         self.road=road
         self.junction=None
         subDict=sub2dict(node)
@@ -74,8 +76,8 @@ class Siginal:
 class SignalReference:
     def __init__(self,node,road):
         self.id=node.getAttribute('id')
-        self.s=node.getAttribute('s')
-        self.t=node.getAttribute('t')
+        self.s=float(node.getAttribute('s'))
+        self.t=float(node.getAttribute('t'))
         subDict=sub2dict(node)
         self.validitys=[]
         validityList=subDict['validity']
@@ -92,7 +94,7 @@ class SignalReference:
                 map.addOverlap(Overlap_signal_lane(signal,lane))
         if signal.junction is None:
             signal.junction=self.road.junction
-            map.addOverlap(Overlap_junction_signal(self.road.junction,lane))
+            map.addOverlap(Overlap_junction_signal(self.road.junction,signal))
         elif signal.junction!=self.road.junction:
             log.warning("one signal have more than one junction: "+signal.junction.id+" and "+self.road.junction.id)
         

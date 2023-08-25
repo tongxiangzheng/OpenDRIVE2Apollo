@@ -2,7 +2,7 @@ from loguru import logger as log
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 import ApolloMap.proto_lib.modules.map.proto.map_overlap_pb2 as map_overlap_pb2
 import pyproj
-from ApolloMap.curve import Curve,OffsetsDict
+from ApolloMap.curve import Curve,OffsetsDict,RoadPoint
 class ApolloMap:
     def __init__(self,openDriveMap):
         self.map=map_pb2.Map()
@@ -58,8 +58,8 @@ class ApolloMap:
                 distOverlap=dist.overlap_id.add()
                 distOverlap.id=overlap_junction_signal.getApolloName()
 
-    def setSegment(self,lane,planView,offsetsDict,segment,forward):
-        curve=Curve(planView,offsetsDict,lane,self.transformer)
+    def setSegment(self,lane,planView,offsetsDict,segment,notes):
+        curve=Curve(planView,offsetsDict,lane,self.transformer,notes)
         for point in curve.points:
             dictPoint=segment.line_segment.point.add()
             dictPoint.x=point.x
@@ -78,30 +78,30 @@ class ApolloMap:
         dist.id.id=lane.ApolloName
         if lane.forward==1:
             segment=dist.left_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,"left")
 
             offsetsDict.addOffsets(lane.widthOffsets,-0.5)
             segment=dist.central_curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,"central")
             offsetsDict.popOffsets()
 
             offsetsDict.addOffsets(lane.widthOffsets,-1)
             segment=dist.right_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,"right")
             offsetsDict.popOffsets()
 
         elif lane.forward==-1:
             segment=dist.right_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,"right")
 
             offsetsDict.addOffsets(lane.widthOffsets,0.5)
             segment=dist.central_curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,"central")
             offsetsDict.popOffsets()
 
             offsetsDict.addOffsets(lane.widthOffsets,1)
             segment=dist.left_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,lane.forward)
+            self.setSegment(lane,planView,offsetsDict,segment,"left")
             offsetsDict.popOffsets()
         else:
             log.error("unknown forward")
@@ -236,6 +236,69 @@ class ApolloMap:
             if signal.overlap_junction_signal is not None:
                 distOverlap=distSignal.overlap_id.add()
                 distOverlap.id=signal.overlap_junction_signal.getApolloName()
+            roadPoint=RoadPoint(signal.road.planView,signal.s,signal.t,self.transformer)
+
+            distPoint=distSignal.boundary.point.add()
+            distPoint.x=roadPoint.point.x-5.0
+            distPoint.y=roadPoint.point.y-5.0
+            distPoint.z=0.0
+            
+            distPoint=distSignal.boundary.point.add()
+            distPoint.x=roadPoint.point.x+5.0
+            distPoint.y=roadPoint.point.y-5.0
+            distPoint.z=0.0
+            
+            distPoint=distSignal.boundary.point.add()
+            distPoint.x=roadPoint.point.x+5.0
+            distPoint.y=roadPoint.point.y+5.0
+            distPoint.z=0.0
+            
+            distPoint=distSignal.boundary.point.add()
+            distPoint.x=roadPoint.point.x-5.0
+            distPoint.y=roadPoint.point.y+5.0
+            distPoint.z=0.0
+            distStopLine=distSignal.stop_line.add()
+            distStopLineSegment=distStopLine.segment.add()
+
+            distStopLinePoint=distStopLineSegment.line_segment.point.add()
+            roadPoint.Offset(3)
+            distStopLinePoint.x=roadPoint.point.x
+            distStopLinePoint.y=roadPoint.point.y
+            distStopLinePoint.z=0.0
+
+            distStopLinePoint=distStopLineSegment.line_segment.point.add()
+            roadPoint.Offset(-3)
+            distStopLinePoint.x=roadPoint.point.x
+            distStopLinePoint.y=roadPoint.point.y
+            distStopLinePoint.z=0.0
+
+            distStopLinePoint=distStopLineSegment.line_segment.point.add()
+            roadPoint.Offset(-3)
+            distStopLinePoint.x=roadPoint.point.x
+            distStopLinePoint.y=roadPoint.point.y
+            distStopLinePoint.z=0.0
+            
+            subSignal0=distSignal.subsignal.add()
+            subSignal0.id.id="0"
+            subSignal0.type=subSignal0.Type.CIRCLE
+            subSignal0.location.x=roadPoint.point.x
+            subSignal0.location.y=roadPoint.point.y
+            subSignal0.location.z=0.0
+
+            subSignal1=distSignal.subsignal.add()
+            subSignal1.id.id="1"
+            subSignal1.type=subSignal0.Type.CIRCLE
+            subSignal1.location.x=roadPoint.point.x
+            subSignal1.location.y=roadPoint.point.y
+            subSignal1.location.z=1.0
+            
+            subSignal2=distSignal.subsignal.add()
+            subSignal2.id.id="2"
+            subSignal2.type=subSignal0.Type.CIRCLE
+            subSignal2.location.x=roadPoint.point.x
+            subSignal2.location.y=roadPoint.point.y
+            subSignal2.location.z=2.0
+            
                 
     def setOverlapLaneObject(self,distOverlap,lane):
         distLane=distOverlap.object.add()

@@ -3,6 +3,7 @@ from OpenDriveMap.dom_tool import sub2dict,dfs,Counter
 
 from OpenDriveMap.planView import PlanView,Offsets
 from OpenDriveMap.signal import Signals
+from OpenDriveMap.object import Objects
 
 #import traceback
 
@@ -142,6 +143,7 @@ class Lane:
         
         self.s=s
         self.t=t
+        self.length=t-s
         self.widthOffsets.setStart(s)
         #self.ApolloName=self.fullName
         #log.debug("parsing lane "+self.fullName)
@@ -373,10 +375,11 @@ class Road:
         if len(signalList)==1:
             self.signals=Signals(signalList[0],self,map)
 
+        objectList=subDict['objects']
+        self.objects=None
+        if len(objectList)==1:
+            self.objects=Objects(objectList[0],map)
 
-        # if len(signalList)==1:
-        #     signalReferences=signalList[0].getElementsByTagName('signalReference')
-        #     self.signalReferences=SignalReferences(signalReferences)
         
 
     def getLaneSection(self,contactPoint):
