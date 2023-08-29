@@ -88,6 +88,7 @@ class Lane:
         self.junction=None
         self.overlap_junction_lane=None
         self.overlap_signal_lanes=[]
+        self.overlap_crosswalk_lanes=[]
         if len(linkList)==1:
             links=linkList[0]
             if len(links.getElementsByTagName('predecessor'))==1:
@@ -133,7 +134,8 @@ class Lane:
             #return
         if successor not in self.ApolloSuccessors:
             self.ApolloSuccessors.append(successor)
-
+    def setCentralCurve(self,curve):
+        self.centralCurve=curve
     def parse(self,curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter,laneSectionId,s,t):
         self.ApolloId=laneCounter.getId()
         
@@ -378,7 +380,7 @@ class Road:
         objectList=subDict['objects']
         self.objects=None
         if len(objectList)==1:
-            self.objects=Objects(objectList[0],map)
+            self.objects=Objects(objectList[0],self,map)
 
         
 
@@ -441,6 +443,8 @@ class Road:
         self.planView.parse(map)
         if self.signals is not None:
             self.signals.parse(map,signalCounter)
+        if self.objects:
+            self.objects.parse(map)
     def print(self):
         print(self.ApolloName)
         self.lanes.print()

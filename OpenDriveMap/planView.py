@@ -72,6 +72,7 @@ class Direct:
         self.y=y
         self.directX=math.cos(hdg)
         self.directY=math.sin(hdg)
+        self.hdg=hdg
     def offset(self,offset):
         offsetDirectX=-self.directY
         offsetDirectY=self.directX
@@ -80,10 +81,18 @@ class Direct:
     def forward(self,length):
         self.x+=length*self.directX
         self.y+=length*self.directY
-
+    def copy(self):
+        direct=Direct(0.0,0.0,0.0)
+        direct.x=self.x
+        direct.y=self.y
+        direct.directX=self.directX
+        direct.directY=self.directY
+        direct.hdg=self.hdg
+        return direct
     def setHdg(self,hdg):
         self.directX=math.cos(hdg)
         self.directY=math.sin(hdg)
+        self.hdg=hdg
 class Geometry:
     def __init__(self,node):
         #dfs(node,1)
@@ -111,8 +120,13 @@ class Geometry:
             log.warning("Geometry:unknown geometry type")
     def getDirect(self,s,laneLength):
         s-=self.s
-        direct=Direct(self.x,self.y,self.hdg)
         limit=0.001
+        if s+limit<0:
+            log.warning("s is "+str(s)+" which less than 0")
+        if s>self.length+limit:
+            log.warning("s is "+str(s)+" which larger than self.length:"+str(self.length))
+
+        direct=Direct(self.x,self.y,self.hdg)
         nextL=limit
         if self.type=='line':
             #log.debug(str(direct.x)+" "+str(direct.y))
@@ -147,7 +161,7 @@ class Geometry:
             self.len_per_point=self.length/int(self.length)
             self.XList=directList[0]
             self.YList=directList[1]
-        "nothting"
+        
         
 
 class PlanView:

@@ -16,10 +16,9 @@ class OffsetsDict:
             ans=ans+offsets.getOffset(s,lim)*coefficient
         return ans
 class Point:
-    def __init__(self,s,x,y,transformer):
-        self.s=float(s)
-        self.x=float(x)
-        self.y=float(y)
+    def __init__(self,x,y,transformer):
+        self.x=x
+        self.y=y
 
         self.x,self.y=transformer.transform(self.x,self.y)
 
@@ -27,7 +26,14 @@ class Point:
         self.sucLine=None
     def reverse(self):
         self.preLine,self.sucLine=self.sucLine,self.preLine
-        
+
+class Vector:
+    def __init__(self,prePoint,sucPoint):
+        self.x=sucPoint.x-prePoint.x
+        self.y=sucPoint.y-prePoint.y
+    def mul(self,vectorA):
+        #print(self.x*vectorA.y-self.y*vectorA.x)
+        return self.x*vectorA.y-self.y*vectorA.x
 class Line:
     def __init__(self,prePoint,sucPoint):
         self.prePoint=prePoint
@@ -39,7 +45,19 @@ class Line:
         self.length=sqrt((self.prePoint.x-self.sucPoint.x)**2+(self.prePoint.y-self.sucPoint.y)**2)
     def reverse(self):
         self.prePoint,self.sucPoint=self.sucPoint,self.prePoint
-        
+    def intersect(self,lineA):
+        if self.cross(lineA) == True and lineA.cross(self) == True:
+            return True
+        return False
+    def cross(self,lineA):
+        selfV=Vector(self.prePoint,self.sucPoint)
+        Aa=Vector(self.prePoint,lineA.prePoint)
+        Ab=Vector(self.prePoint,lineA.sucPoint)
+        if Aa.mul(selfV)*Ab.mul(selfV)<0:
+            return True
+        return False
+
+
 class RoadPoint:
     def __init__(self,PlanView,s,t,transformer):
         p=0
@@ -49,15 +67,15 @@ class RoadPoint:
                 break
             else:
                 p+=1
+        geometry=PlanView.geometrys[p]
         direct,nextL=geometry.getDirect(s,0)
         direct.offset(t)
-        s+=nextL
         self.direct=direct
         self.transformer=transformer
-        self.point=Point(s,direct.x,direct.y,transformer)
+        self.point=Point(direct.x,direct.y,transformer)
     def Offset(self,s):
         self.direct.offset(s)
-        self.point=Point(s,self.direct.x,self.direct.y,self.transformer)
+        self.point=Point(self.direct.x,self.direct.y,self.transformer)
 
 
 class Curve:
@@ -78,7 +96,7 @@ class Curve:
             print("lane: ",lane.s,lane.t)
             print("len(PlanView.geometrys): ",len(PlanView.geometrys))
         
-        limit=0.0001
+        limit=0.00000000001
         lastS=0.0
         while p<len(PlanView.geometrys):
             geometry=PlanView.geometrys[p]
@@ -102,7 +120,7 @@ class Curve:
                 print("offsets: ",offsetsDict.getOffset(s,'+'))
             lastS=s
             s+=nextL
-            self.addPoint(Point(s,direct.x,direct.y,transformer))
+            self.addPoint(Point(direct.x,direct.y,transformer))
             if notes=="central" and len(self.points)>=2 and self.lines[-1].length<limit*0.5:
                 line=self.lines[-1]
                 log.warning("two point is too near at ("+str(line.prePoint.x)+","+str(line.prePoint.y)+") and ("+str(line.sucPoint.x)+","+str(line.sucPoint.y)+")")
@@ -116,7 +134,7 @@ class Curve:
             s=lane.t
             direct,nextL=geometry.getDirect(s,lane.length)
             direct.offset(offsetsDict.getOffset(s,'-'))
-            self.addPoint(Point(s,direct.x,direct.y,transformer))
+            self.addPoint(Point(direct.x,direct.y,transformer))
             if len(self.points)>=2 and self.lines[-1].length<limit*0.5:
                 line=self.lines[-1]
                 log.warning("two point is too near at ("+str(line.prePoint.x)+","+str(line.prePoint.y)+") and ("+str(line.sucPoint.x)+","+str(line.sucPoint.y)+")")
@@ -147,16 +165,51 @@ class Curve:
         self.points.reverse()
         self.lines.reverse()
 
-class polygon:
-    def __init__(self,object):
+class Polygon:
+    def __init__(self,object,transformer):
         self.points=[]
+        self.lines=[]
         outline=object.outline
         s=object.s
         t=object.t
         hdg=object.hdg
+        #referencePoint=RoadPoint(object.road.planView,s,t,transformer)
+        referencePoint=RoadPoint(object.road.planView,s,t,transformer)
+        referenceDirect=referencePoint.direct
+        
+        referenceDirect.setHdg(referencePoint.direct.hdg+hdg)
+
+        # direct=referenceDirect.copy()
+        # direct.offset(-5)
+        # direct.forward(-1)
+        # self.addPoint(Point(direct.x,direct.y,transformer))
+        
+        # direct=referenceDirect.copy()
+        # direct.offset(-5)
+        # direct.forward(1)
+        # self.addPoint(Point(direct.x,direct.y,transformer))
+
+        # direct=referenceDirect.copy()
+        # direct.offset(5)
+        # direct.forward(1)
+        # self.addPoint(Point(direct.x,direct.y,transformer))
+
+        # direct=referenceDirect.copy()
+        # direct.offset(5)
+        # direct.forward(-1)
+        # self.addPoint(Point(direct.x,direct.y,transformer))
+
+        # self.addPoint(referencePoint.point)
+
         for cornerLocal in outline.cornerLocals:
-            "continue"
-    
+            if cornerLocal==outline.cornerLocals[-1]:
+                break
+            direct=cornerLocal.getDirect(referenceDirect)
+            self.addPoint(Point(direct.x,direct.y,transformer))
+            
     def addPoint(self,point):
         self.points.append(point)
+        if len(self.points)>=2:
+            self.lines.append(Line(self.points[-2],self.points[-1]))
+
         

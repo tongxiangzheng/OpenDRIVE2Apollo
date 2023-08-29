@@ -2,7 +2,7 @@ from loguru import logger as log
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 import ApolloMap.proto_lib.modules.map.proto.map_overlap_pb2 as map_overlap_pb2
 import pyproj
-from ApolloMap.curve import Curve,OffsetsDict,RoadPoint
+from ApolloMap.curve import Curve,OffsetsDict,RoadPoint,Polygon
 class ApolloMap:
     def __init__(self,openDriveMap):
         self.map=map_pb2.Map()
@@ -32,18 +32,7 @@ class ApolloMap:
         self.map.header.bottom=float(openDriveMap.header.south)
         self.map.header.vendor=str.encode(openDriveMap.header.vendor)
     
-    def setCrosswalk(self,openDriveMap):
-        crosswalk0=self.crosswalk.add()
-        "to be continued..."
 
-    #abandon
-    def setpolygon(self,dist,junction):
-        for connection in junction.connections:
-            for lane in connection.laneLinks:
-                "to be continued..."
-            #pb_point = dist.polygon.point.add()
-
-            #pb_point.x, pb_point.y, pb_point.z = x, y, 0
 
     def setJunction(self,openDriveMap):
     
@@ -60,6 +49,8 @@ class ApolloMap:
 
     def setSegment(self,lane,planView,offsetsDict,segment,notes):
         curve=Curve(planView,offsetsDict,lane,self.transformer,notes)
+        if notes=="central":
+            lane.setCentralCurve(curve)
         for point in curve.points:
             dictPoint=segment.line_segment.point.add()
             dictPoint.x=point.x
@@ -257,6 +248,7 @@ class ApolloMap:
             distPoint.x=roadPoint.point.x-5.0
             distPoint.y=roadPoint.point.y+5.0
             distPoint.z=0.0
+
             distStopLine=distSignal.stop_line.add()
             distStopLineSegment=distStopLine.segment.add()
 
@@ -298,7 +290,32 @@ class ApolloMap:
             subSignal2.location.x=roadPoint.point.x
             subSignal2.location.y=roadPoint.point.y
             subSignal2.location.z=2.0
+
             
+    def setpolygon(self,distPolygon,polygon):
+        for point in polygon.points:
+            distPoint=distPolygon.point.add()
+            distPoint.x=point.x
+            distPoint.y=point.y
+            distPoint.z=0.0
+
+    def setObjectCrosswalk(self,object,openDriveMap):
+        distCrosswalk=self.map.crosswalk.add()
+        distCrosswalk.id.id=object.ApolloName
+        object.setPolygon(Polygon(object,self.transformer))
+        self.setpolygon(distCrosswalk.polygon,object.polygon)
+        
+        object.parse_junction(openDriveMap)
+        for overlap_crosswalk_lane in object.overlap_crosswalk_lanes:
+            distOverlap=distCrosswalk.overlap_id.add()
+            distOverlap.id=overlap_crosswalk_lane.getApolloName()
+        
+
+    def setObject(self,openDriveMap):
+        for object in openDriveMap.objects:
+            if object.type=='crosswalk':
+                self.setObjectCrosswalk(object,openDriveMap)
+    
                 
     def setOverlapLaneObject(self,distOverlap,lane):
         distLane=distOverlap.object.add()
@@ -316,6 +333,11 @@ class ApolloMap:
         distSignal=distOverlap.object.add()
         distSignal.id.id=signal.ApolloName
         distSignal.signal_overlap_info.CopyFrom(map_overlap_pb2.SignalOverlapInfo())  #nt设计
+    
+    def setOverlapCrosswalkObject(self,distOverlap,crosswalk):
+        distSignal=distOverlap.object.add()
+        distSignal.id.id=crosswalk.ApolloName
+        distSignal.crosswalk_overlap_info.CopyFrom(map_overlap_pb2.CrosswalkOverlapInfo())  #nt设计
     
     
     def setOverlap(self,openDriveMap):
@@ -336,6 +358,12 @@ class ApolloMap:
                 self.setOverlapJunctionObject(distOverlap,overlap.junction)
                 self.setOverlapSignalObject(distOverlap,overlap.signal)
 
+            elif overlap.kind=="crosswalk_with_lane":
+
+                distOverlap.id.id=overlap.getApolloName()
+                self.setOverlapCrosswalkObject(distOverlap,overlap.crosswalk)
+                self.setOverlapLaneObject(distOverlap,overlap.lane)
+            
             else:
                 log.error("unknown overlap kind: "+overlap.kind)
     def parse_from_OpenDrive(self,openDriveMap):
@@ -344,10 +372,10 @@ class ApolloMap:
         self.distCrs=pyproj.CRS.from_proj4("+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
        
         self.setHeader(openDriveMap)
-        #setCrossWalk(openDriveMap)
         self.setJunction(openDriveMap)
         self.setLane(openDriveMap)
         self.setRoad(openDriveMap)
         self.setSignal(openDriveMap)
+        self.setObject(openDriveMap)
         self.setOverlap(openDriveMap)
 	
