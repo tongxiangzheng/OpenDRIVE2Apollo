@@ -6,6 +6,7 @@ from ApolloMap.curve import Curve,OffsetsDict,RoadPoint,Polygon
 class ApolloMap:
     def __init__(self,openDriveMap):
         self.map=map_pb2.Map()
+        self.lanes=dict()
         self.parse_from_OpenDrive(openDriveMap)
         
     def setProjection(self,projText):
@@ -67,6 +68,7 @@ class ApolloMap:
 
     def setLaneFromLane(self,lane,planView,offsetsDict):
         dist=self.map.lane.add()
+        self.lanes[lane.ApolloId]=dist
         dist.id.id=lane.ApolloName
         if lane.forward==1:
             segment=dist.left_boundary.curve.segment.add()
@@ -143,6 +145,10 @@ class ApolloMap:
         for overlap_signal_lane in lane.overlap_signal_lanes:
             distOverlap=dist.overlap_id.add()
             distOverlap.id=overlap_signal_lane.getApolloName()
+        # for overlap_crosswalk_lane in lane.overlap_crosswalk_lanes:
+        #     distOverlap=dist.overlap_id.add()
+        #     distOverlap.id=overlap_crosswalk_lane.getApolloName()
+        #在crosswalk中处理
 
         if lane.type!='bidirectional':
             dist.direction=dist.LaneDirection.FORWARD
@@ -327,9 +333,17 @@ class ApolloMap:
         self.setpolygon(distCrosswalk.polygon,object.polygon)
         
         object.parse_junction(openDriveMap)
+        if len(object.overlap_crosswalk_lanes)==0:
+            log.info("cannot find overlap about crosswalk: ",object.id+" with any lane")
         for overlap_crosswalk_lane in object.overlap_crosswalk_lanes:
             distOverlap=distCrosswalk.overlap_id.add()
             distOverlap.id=overlap_crosswalk_lane.getApolloName()
+
+            distLane=self.lanes[overlap_crosswalk_lane.lane.ApolloId]
+            distOverlap=distLane.overlap_id.add()
+            distOverlap.id=overlap_crosswalk_lane.getApolloName()
+
+        
         
 
     def setObject(self,openDriveMap):

@@ -46,7 +46,7 @@ def toComOpT(path):
   
 
 tryAll()
-#translate("../../OpenDrive-maps-from-CARLA/carla_Town12_Town12.xodr","01")
+#translate("../../OpenDrive-maps-from-CARLA/carla_Town06.xodr","01")
 #toComOpT("../../OpenDrive-maps-from-CARLA/carla_Town04.xodr")
 
 

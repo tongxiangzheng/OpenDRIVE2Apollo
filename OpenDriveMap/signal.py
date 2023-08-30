@@ -6,6 +6,8 @@ class Overlap_signal_lane:
         self.kind="signal_with_lane"
         signal.overlap_signal_lanes.append(self)
         lane.overlap_signal_lanes.append(self)
+        if len(lane.overlap_signal_lanes)>1:
+            log.warning("Multiple signals for one lane: "+lane.fullName)
         self.signal=signal
         self.lane=lane
     def getApolloName(self):

@@ -55,7 +55,7 @@ class Object:
         if junction is not None:
             for overlap in junction.overlap_junction_lanes:
                 lane=overlap.lane
-                if lane.type!="driving":
+                if lane.type=="shoulder":
                     continue
                 if self.checkIntersect(lane.centralCurve) == True:
                     map.addOverlap(Overlap_crosswalk_lane(self,lane))
