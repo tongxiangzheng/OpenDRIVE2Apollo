@@ -2,6 +2,7 @@ from loguru import logger as log
 from math import sqrt
 from OpenDriveMap.road import Offsets
 from OpenDriveMap.object import Object
+from OpenDriveMap.planView import limit
 
 class OffsetsDict:
     def __init__(self):
@@ -15,6 +16,11 @@ class OffsetsDict:
         for offsets,coefficient in self.offsetsList:
             ans=ans+offsets.getOffset(s,lim)*coefficient
         return ans
+    def copy(self):
+        offsetsDict=OffsetsDict()
+        for offsets,coefficient in self.offsetsList:
+            offsetsDict.addOffsets(offsets,coefficient)
+        return offsetsDict
 class Point:
     def __init__(self,x,y,transformer):
         self.x=x
@@ -63,10 +69,13 @@ class RoadPoint:
         p=0
         while p<len(PlanView.geometrys):
             geometry=PlanView.geometrys[p]
-            if s<=geometry.s+geometry.length:
+            if s<=geometry.s+geometry.length+limit:
                 break
             else:
                 p+=1
+        if p==len(PlanView.geometrys):
+            p-=1
+            log.warning("s: "+str(s)+" is larger than planview length: "+str(geometry.s+geometry.length))
         geometry=PlanView.geometrys[p]
         direct,nextL=geometry.getDirect(s,0)
         direct.offset(t)
@@ -90,13 +99,12 @@ class Curve:
                 break
             else:
                 p+=1
-        debugLaneName='none'
+        debugLaneName='lane_-1_1_1'
         if lane.ApolloName==debugLaneName:
             print("---------")
             print("lane: ",lane.s,lane.t)
             print("len(PlanView.geometrys): ",len(PlanView.geometrys))
         
-        limit=0.00000000001
         lastS=0.0
         while p<len(PlanView.geometrys):
             geometry=PlanView.geometrys[p]
@@ -104,16 +112,22 @@ class Curve:
                 print("s,p,t: ",s,p,lane.t)
                 print("planView: ",PlanView.geometrys[p].s,PlanView.geometrys[p].length)
             if s+limit>=geometry.length+geometry.s:
-                s=max(geometry.length+geometry.s,lastS+limit)
+                p+=1
+                if p==len(PlanView.geometrys):
+                    break
+                s=max(PlanView.geometrys[p].s,lastS+limit)
                 #direct,nextL=geometry.getDirect(s)
                 #direct.offset(offsetsDict.getOffset(s,'-'))
                 #self.addPoint(Point(s,direct.x,direct.y,transformer))
-                p+=1
                 continue
             if s+limit>=lane.t:
                 break
             #log.info(str(s)+" "+str(geometry.length+geometry.s))
+            if lane.ApolloName==debugLaneName:
+                print("getDirect: s is ",s)
             direct,nextL=geometry.getDirect(s,lane.length)
+            if lane.ApolloName==debugLaneName:
+                print("end getDirect ",s)
             direct.offset(offsetsDict.getOffset(s,'+'))
             if lane.ApolloName==debugLaneName:
                 print("s: ",s)
@@ -129,23 +143,25 @@ class Curve:
                 log.warning("s: "+str(s)+" geometry.s: "+str(geometry.s)+" geometry.length: "+str(geometry.s))
         if p==len(PlanView.geometrys):
             p-=1
-        if True is True:
+        
+        geometry=PlanView.geometrys[p]
+        s=lane.t
+        while s<geometry.s:
+            p-=1
             geometry=PlanView.geometrys[p]
-            s=lane.t
-            direct,nextL=geometry.getDirect(s,lane.length)
-            direct.offset(offsetsDict.getOffset(s,'-'))
-            self.addPoint(Point(direct.x,direct.y,transformer))
-            if len(self.points)>=2 and self.lines[-1].length<limit*0.5:
-                line=self.lines[-1]
-                log.warning("two point is too near at ("+str(line.prePoint.x)+","+str(line.prePoint.y)+") and ("+str(line.sucPoint.x)+","+str(line.sucPoint.y)+")")
-                log.warning("it's happend at end of"+lane.ApolloName)
-    
-        else:
-            log.info("skip a point at end of lane")
+
+        direct,nextL=geometry.getDirect(s,lane.length)
+        direct.offset(offsetsDict.getOffset(s,'-'))
+        self.addPoint(Point(direct.x,direct.y,transformer))
+        if len(self.points)>=2 and self.lines[-1].length<limit*0.5:
+            line=self.lines[-1]
+            log.warning("two point is too near at ("+str(line.prePoint.x)+","+str(line.prePoint.y)+") and ("+str(line.sucPoint.x)+","+str(line.sucPoint.y)+")")
+            log.warning("it's happend at end of"+lane.ApolloName)
+
         if len(self.points)<=3:
-            log.warning(lane.ApolloName+": too less point : len="+str(len(self.points)))
+            log.warning(lane.fullName+": too less point : len="+str(len(self.points)))
             log.warning("length of lane is "+str(lane.length))
-        if lane.forward==1:
+        if lane.forward==-1:
             self.reverse()
     def addPoint(self,point):
         self.points.append(point)

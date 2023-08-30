@@ -136,6 +136,8 @@ class Lane:
             self.ApolloSuccessors.append(successor)
     def setCentralCurve(self,curve):
         self.centralCurve=curve
+    def setCentraloffsetsDict(self,offsetsDict):
+        self.centralOffsetsDict=offsetsDict.copy()
     def parse(self,curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter,laneSectionId,s,t):
         self.ApolloId=laneCounter.getId()
         
@@ -366,7 +368,7 @@ class Road:
 
         #planView
         planViewList=subDict['planView']
-        self.planView=PlanView(planViewList[0])
+        self.planView=PlanView(planViewList[0],self)
 
         #lane
         laneList=subDict['lanes']

@@ -4,7 +4,7 @@ import math
 from numpy import pi,sqrt
 import matplotlib.pyplot as plt
 from pyclothoids import Clothoid
-
+limit=0.0000001
 class Offset:
     def __init__(self,node):
         if node.hasAttribute('s'):
@@ -94,8 +94,9 @@ class Direct:
         self.directY=math.sin(hdg)
         self.hdg=hdg
 class Geometry:
-    def __init__(self,node):
+    def __init__(self,node,road):
         #dfs(node,1)
+        self.road=road
         self.s=float(node.getAttribute('s'))
         self.x=float(node.getAttribute('x'))
         self.y=float(node.getAttribute('y'))
@@ -119,12 +120,12 @@ class Geometry:
         else:
             log.warning("Geometry:unknown geometry type")
     def getDirect(self,s,laneLength):
+
+        if s+limit<self.s:
+            log.warning("Road "+self.road.id+" : s is "+str(s)+" which less than self.s , self.s is :"+str(self.s))
         s-=self.s
-        limit=0.001
-        if s+limit<0:
-            log.warning("s is "+str(s)+" which less than 0")
         if s>self.length+limit:
-            log.warning("s is "+str(s)+" which larger than self.length:"+str(self.length))
+            log.warning("Road "+self.road.id+" : s is "+str(s)+" which is larger than self.length:"+str(self.length))
 
         direct=Direct(self.x,self.y,self.hdg)
         nextL=limit
@@ -165,11 +166,11 @@ class Geometry:
         
 
 class PlanView:
-    def __init__(self,node):
+    def __init__(self,node,road):
         self.geometrys=[]
         nodelist=node.getElementsByTagName('geometry')
         for node in nodelist:
-            self.geometrys.append(Geometry(node))
+            self.geometrys.append(Geometry(node,road))
     def getLength(self):
         last=self.geometrys[-1]
         return last.s+last.length

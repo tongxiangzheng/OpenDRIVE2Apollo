@@ -52,12 +52,33 @@ class Object:
         self.polygon=polygon
     def parse_junction(self,map):
         junction=self.road.junction
-        for overlap in junction.overlap_junction_lanes:
-            lane=overlap.lane
-            if lane.type!="driving":
-                continue
-            if self.checkIntersect(lane.centralCurve) == True:
-                map.addOverlap(Overlap_crosswalk_lane(self,lane))
+        if junction is not None:
+            for overlap in junction.overlap_junction_lanes:
+                lane=overlap.lane
+                if lane.type!="driving":
+                    continue
+                if self.checkIntersect(lane.centralCurve) == True:
+                    map.addOverlap(Overlap_crosswalk_lane(self,lane))
+        else:
+            begin=self.road.getLaneSection('start')
+            end=self.road.getLaneSection('end')
+            for laneId in list(begin.lanes):
+                lane=begin.getLaneById(laneId)
+                if lane.type!="driving":
+                    continue
+                if self.checkIntersect(lane.centralCurve) == True:
+                    map.addOverlap(Overlap_crosswalk_lane(self,lane))
+            if end==begin:
+                return
+            
+            log.debug("solving road with more than one section")
+            for laneId in list(end.lanes):
+                lane=end.getLaneById(laneId)
+                if lane.type!="driving":
+                    continue
+                if self.checkIntersect(lane.centralCurve) == True:
+                    map.addOverlap(Overlap_crosswalk_lane(self,lane))
+
 
     def checkIntersect(self,centralCurve):
         polygon=self.polygon

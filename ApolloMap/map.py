@@ -9,10 +9,10 @@ class ApolloMap:
         self.parse_from_OpenDrive(openDriveMap)
         
     def setProjection(self,projText):
-        if projText is not None:
-            self.sourceCrs=pyproj.CRS.from_proj4(projText)
+        #if projText is not None:
+            #self.sourceCrs=pyproj.CRS.from_proj4(projText)
         
-            self.transformer = pyproj.Transformer.from_crs(self.sourceCrs, self.distCrs)
+        self.transformer = pyproj.Transformer.from_crs(self.sourceCrs, self.distCrs)
 	
 
     def setHeader(self,openDriveMap):
@@ -51,6 +51,7 @@ class ApolloMap:
         curve=Curve(planView,offsetsDict,lane,self.transformer,notes)
         if notes=="central":
             lane.setCentralCurve(curve)
+            lane.setCentraloffsetsDict(offsetsDict)
         for point in curve.points:
             dictPoint=segment.line_segment.point.add()
             dictPoint.x=point.x
@@ -216,81 +217,101 @@ class ApolloMap:
             if road.junction is not None:
                 distRoad.junction_id.id=road.junction.ApolloName
             #distRoad.type=distRoad.Type.CITY_ROAD
+    def setSignalReference(self,signalReference):
+
+        distSignal=self.map.signal.add()
+        distSignal.type=distSignal.Type.MIX_3_VERTICAL
+        distSignal.id.id=signalReference.ApolloName
+        for overlap_signal_lane in signalReference.overlap_signal_lanes:
+            distOverlap=distSignal.overlap_id.add()
+            distOverlap.id=overlap_signal_lane.getApolloName()
+        if signalReference.overlap_junction_signal is not None:
+            distOverlap=distSignal.overlap_id.add()
+            distOverlap.id=signalReference.overlap_junction_signal.getApolloName()
+        roadPoint=RoadPoint(signalReference.road.planView,signalReference.s,signalReference.t,self.transformer)
+        
+        distPoint=distSignal.boundary.point.add()
+        distPoint.x=roadPoint.point.x-5.0
+        distPoint.y=roadPoint.point.y-5.0
+        distPoint.z=0.0
+        
+        distPoint=distSignal.boundary.point.add()
+        distPoint.x=roadPoint.point.x+5.0
+        distPoint.y=roadPoint.point.y-5.0
+        distPoint.z=0.0
+        
+        distPoint=distSignal.boundary.point.add()
+        distPoint.x=roadPoint.point.x+5.0
+        distPoint.y=roadPoint.point.y+5.0
+        distPoint.z=0.0
+        
+        distPoint=distSignal.boundary.point.add()
+        distPoint.x=roadPoint.point.x-5.0
+        distPoint.y=roadPoint.point.y+5.0
+        distPoint.z=0.0
+
+        
+        subSignal0=distSignal.subsignal.add()
+        subSignal0.id.id="0"
+        subSignal0.type=subSignal0.Type.CIRCLE
+        subSignal0.location.x=roadPoint.point.x
+        subSignal0.location.y=roadPoint.point.y
+        subSignal0.location.z=0.0
+
+        subSignal1=distSignal.subsignal.add()
+        subSignal1.id.id="1"
+        subSignal1.type=subSignal0.Type.CIRCLE
+        subSignal1.location.x=roadPoint.point.x
+        subSignal1.location.y=roadPoint.point.y
+        subSignal1.location.z=1.0
+        
+        subSignal2=distSignal.subsignal.add()
+        subSignal2.id.id="2"
+        subSignal2.type=subSignal0.Type.CIRCLE
+        subSignal2.location.x=roadPoint.point.x
+        subSignal2.location.y=roadPoint.point.y
+        subSignal2.location.z=2.0
+
+        
+        roadPoint.Offset(-signalReference.t)
+        distStopLine=distSignal.stop_line.add()
+        distStopLineSegment=distStopLine.segment.add()
+        if len(signalReference.validitys)!=1:
+            log.warning("cannot solve it now")
+        for i in range(len(signalReference.validitys[0].lane_ptrs)):
+            lane=signalReference.validitys[0].lane_ptrs[i]
+            width=lane.widthOffsets.getOffset(signalReference.s,"-")
+            central=lane.centralOffsetsDict.getOffset(signalReference.s,"-")
+            roadPoint.Offset(central)
+            if i==0:
+                width=lane.widthOffsets.getOffset(signalReference.s,"-")
+                distStopLinePoint=distStopLineSegment.line_segment.point.add()
+                roadPoint.Offset(width*0.5)
+                distStopLinePoint.x=roadPoint.point.x
+                distStopLinePoint.y=roadPoint.point.y
+                distStopLinePoint.z=0.0
+                roadPoint.Offset(-width*0.5)
+
+            distStopLinePoint=distStopLineSegment.line_segment.point.add()
+            distStopLinePoint.x=roadPoint.point.x
+            distStopLinePoint.y=roadPoint.point.y
+            distStopLinePoint.z=0.0
+
+            if i==len(signalReference.validitys[0].lane_ptrs)-1:
+                width=lane.widthOffsets.getOffset(signalReference.s,"-")
+                distStopLinePoint=distStopLineSegment.line_segment.point.add()
+                roadPoint.Offset(-width*0.5)
+                distStopLinePoint.x=roadPoint.point.x
+                distStopLinePoint.y=roadPoint.point.y
+                distStopLinePoint.z=0.0
+                roadPoint.Offset(width*0.5)
+            roadPoint.Offset(-central)
+        
+
     def setSignal(self,openDriveMap):
         for signal in openDriveMap.signals.values():
-            distSignal=self.map.signal.add()
-            distSignal.type=distSignal.Type.MIX_3_VERTICAL
-            distSignal.id.id=signal.ApolloName
-            for overlap_signal_lane in signal.overlap_signal_lanes:
-                distOverlap=distSignal.overlap_id.add()
-                distOverlap.id=overlap_signal_lane.getApolloName()
-            if signal.overlap_junction_signal is not None:
-                distOverlap=distSignal.overlap_id.add()
-                distOverlap.id=signal.overlap_junction_signal.getApolloName()
-            roadPoint=RoadPoint(signal.road.planView,signal.s,signal.t,self.transformer)
-
-            distPoint=distSignal.boundary.point.add()
-            distPoint.x=roadPoint.point.x-5.0
-            distPoint.y=roadPoint.point.y-5.0
-            distPoint.z=0.0
-            
-            distPoint=distSignal.boundary.point.add()
-            distPoint.x=roadPoint.point.x+5.0
-            distPoint.y=roadPoint.point.y-5.0
-            distPoint.z=0.0
-            
-            distPoint=distSignal.boundary.point.add()
-            distPoint.x=roadPoint.point.x+5.0
-            distPoint.y=roadPoint.point.y+5.0
-            distPoint.z=0.0
-            
-            distPoint=distSignal.boundary.point.add()
-            distPoint.x=roadPoint.point.x-5.0
-            distPoint.y=roadPoint.point.y+5.0
-            distPoint.z=0.0
-
-            distStopLine=distSignal.stop_line.add()
-            distStopLineSegment=distStopLine.segment.add()
-
-            distStopLinePoint=distStopLineSegment.line_segment.point.add()
-            roadPoint.Offset(3)
-            distStopLinePoint.x=roadPoint.point.x
-            distStopLinePoint.y=roadPoint.point.y
-            distStopLinePoint.z=0.0
-
-            distStopLinePoint=distStopLineSegment.line_segment.point.add()
-            roadPoint.Offset(-3)
-            distStopLinePoint.x=roadPoint.point.x
-            distStopLinePoint.y=roadPoint.point.y
-            distStopLinePoint.z=0.0
-
-            distStopLinePoint=distStopLineSegment.line_segment.point.add()
-            roadPoint.Offset(-3)
-            distStopLinePoint.x=roadPoint.point.x
-            distStopLinePoint.y=roadPoint.point.y
-            distStopLinePoint.z=0.0
-            
-            subSignal0=distSignal.subsignal.add()
-            subSignal0.id.id="0"
-            subSignal0.type=subSignal0.Type.CIRCLE
-            subSignal0.location.x=roadPoint.point.x
-            subSignal0.location.y=roadPoint.point.y
-            subSignal0.location.z=0.0
-
-            subSignal1=distSignal.subsignal.add()
-            subSignal1.id.id="1"
-            subSignal1.type=subSignal0.Type.CIRCLE
-            subSignal1.location.x=roadPoint.point.x
-            subSignal1.location.y=roadPoint.point.y
-            subSignal1.location.z=1.0
-            
-            subSignal2=distSignal.subsignal.add()
-            subSignal2.id.id="2"
-            subSignal2.type=subSignal0.Type.CIRCLE
-            subSignal2.location.x=roadPoint.point.x
-            subSignal2.location.y=roadPoint.point.y
-            subSignal2.location.z=2.0
-
+            for reference in signal.references:
+                self.setSignalReference(reference)
             
     def setpolygon(self,distPolygon,polygon):
         for point in polygon.points:
@@ -367,9 +388,9 @@ class ApolloMap:
             else:
                 log.error("unknown overlap kind: "+overlap.kind)
     def parse_from_OpenDrive(self,openDriveMap):
-        self.sourceCrs=pyproj.CRS.from_proj4("+proj=utm +zone=32 +ellps=WGS84")
+        self.sourceCrs=pyproj.CRS.from_proj4("+proj=utm +zone=10 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
             #if proj data is empty,use "+proj=utm +zone={} +ellps=WGS84" by default
-        self.distCrs=pyproj.CRS.from_proj4("+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+        self.distCrs=pyproj.CRS.from_proj4("+proj=utm +zone=10 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
        
         self.setHeader(openDriveMap)
         self.setJunction(openDriveMap)

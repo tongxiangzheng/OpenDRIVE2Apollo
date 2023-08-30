@@ -54,6 +54,7 @@ class Siginal:
         subDict=sub2dict(node)
         self.validitys=[]
         self.referenceValiditys=[]
+        self.references=[]
         self.overlap_signal_lanes=[]
         self.overlap_junction_signal=None
 
@@ -63,14 +64,14 @@ class Siginal:
         self.road=road
     def addValidity(self,validity):
         self.referenceValiditys.append(validity)
+    def addReference(self,reference):
+        self.references.append(reference)
 
-    def parse(self,map,signalCounter):
-        self.ApolloId=signalCounter.getId()
-        self.ApolloName="signal_"+self.ApolloId
+    def parse(self,map):
         for validity in self.validitys:
             validity.parse(self,map)
-            for lane in validity.lane_ptrs:
-                map.addOverlap(Overlap_signal_lane(self,lane))
+            #for lane in validity.lane_ptrs:
+                #map.addOverlap(Overlap_signal_lane(self,lane))
         
 
 class SignalReference:
@@ -78,6 +79,8 @@ class SignalReference:
         self.id=node.getAttribute('id')
         self.s=float(node.getAttribute('s'))
         self.t=float(node.getAttribute('t'))
+        self.overlap_signal_lanes=[]
+        self.overlap_junction_signal=None
         subDict=sub2dict(node)
         self.validitys=[]
         validityList=subDict['validity']
@@ -85,16 +88,22 @@ class SignalReference:
             self.validitys.append(Validity(validity))
         self.road=road
         
-    def parse(self,map):
+    def parse(self,map,signalCounter):
+        self.ApolloId=signalCounter.getId()
+        self.ApolloName="signal_"+self.ApolloId
         signal=map.signals[self.id]
+        self.signal=signal
+        signal.addReference(self)
+        if len(self.validitys)!=1:
+            log.warning("cannot solve it now")
         for validity in self.validitys:
             validity.parse(self,map)
-            signal.addValidity(validity)
+            #signal.addValidity(validity)
             for lane in validity.lane_ptrs:
-                map.addOverlap(Overlap_signal_lane(signal,lane))
+                map.addOverlap(Overlap_signal_lane(self,lane))
         if signal.junction is None:
             signal.junction=self.road.junction
-            map.addOverlap(Overlap_junction_signal(self.road.junction,signal))
+            map.addOverlap(Overlap_junction_signal(self.road.junction,self))
         elif signal.junction!=self.road.junction:
             log.warning("one signal have more than one junction: "+signal.junction.id+" and "+self.road.junction.id)
         
@@ -115,11 +124,11 @@ class Signals:
             
     def parse(self,map,signalCounter):
         for signalReference in self.signalReferences:
-            signalReference.parse(map)
+            signalReference.parse(map,signalCounter)
             
             
         for siginal in self.siginals:
-            siginal.parse(map,signalCounter)
+            siginal.parse(map)
         
 
         

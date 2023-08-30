@@ -41,12 +41,12 @@ def cp(pathFrom,pathTo):
       fw.write(fr.read())
 def toComOpT(path):
   translate(path,"01")
-  cp("01.bin","C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin")
-  cp("01.bin","C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin")
+  cp("01.bin","F:\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin")
+  cp("01.bin","F:\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin")
   
 
-#tryAll()
-translate("../../OpenDrive-maps-from-CARLA/carla_Town04.xodr","01")
+tryAll()
+#translate("../../OpenDrive-maps-from-CARLA/carla_Town12_Town12.xodr","01")
 #toComOpT("../../OpenDrive-maps-from-CARLA/carla_Town04.xodr")
 
 
