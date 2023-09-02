@@ -5,6 +5,7 @@ from OpenDriveMap.planView import Direct
 class Overlap_crosswalk_lane:
     def __init__(self,crosswalk,lane):
         self.kind="crosswalk_with_lane"
+        self.enable=True
         crosswalk.overlap_crosswalk_lanes.append(self)
         lane.overlap_crosswalk_lanes.append(self)
         self.crosswalk=crosswalk

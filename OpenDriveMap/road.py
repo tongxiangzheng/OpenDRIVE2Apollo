@@ -7,45 +7,6 @@ from OpenDriveMap.object import Objects
 
 #import traceback
 
-class RoadLink:
-    def __init__(self,node,type='node'):
-        #print(node)
-        if type != 'node':
-            self.elementType='road'
-            self.sectionPtr=node
-            return
-        self.kind=node.getElementsByTagName('name')
-        self.elementType=node.getAttribute('elementType')
-        self.ptr=None
-        if self.elementType=='road':
-            self.elementId=node.getAttribute('elementId')
-            self.contactPoint=node.getAttribute('contactPoint')
-        elif self.elementType=='junction':
-            self.elementId=node.getAttribute('elementId')
-        else:
-            log.warning("unknown link type")
-    def setSectionByRoad(self,road):
-        self.sectionPtr=road.getLaneSection(self.contactPoint)
-    def setJunction(self,ptr):
-        self.junctionPtr=ptr
-    def print(self):
-        print(self.elementType)
-        if self.elementType=='road':
-            print(self.sectionPtr)
-        else:
-            print(self.junctionPtr)
-class Speed:
-    def __init__(self,node):
-        self.max=node.getAttribute('max')
-        self.unit=node.getAttribute('unit')
-        
-class Type:
-    def __init__(self,node):
-        self.type=node.getAttribute('type')
-        speedNodes=node.getElementsByTagName('speed')
-        if len(speedNodes)==1:
-            self.speed=Speed(speedNodes[0])
-        
     
         
 class LaneLink:
@@ -59,6 +20,7 @@ class LaneLink:
 class Overlap_junction_lane:
     def __init__(self,junction,lane):
         self.kind="junction_with_lane"
+        self.enable=True
         junction.overlap_junction_lanes.append(self)
         lane.overlap_junction_lane=self
         self.junction=junction
@@ -138,7 +100,7 @@ class Lane:
         self.centralCurve=curve
     def setCentraloffsetsDict(self,offsetsDict):
         self.centralOffsetsDict=offsetsDict.copy()
-    def parse(self,curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter,laneSectionId,s,t):
+    def parse(self,curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter,laneSectionId,s,t,speed):
         self.ApolloId=laneCounter.getId()
         
         self.ApolloName='lane_'+self.ApolloId
@@ -149,6 +111,7 @@ class Lane:
         self.t=t
         self.length=t-s
         self.widthOffsets.setStart(s)
+        self.speed=speed
         #self.ApolloName=self.fullName
         #log.debug("parsing lane "+self.fullName)
         
@@ -265,7 +228,7 @@ class LanesSection:
         return None
     def getLaneByLaneLink(self,laneLink):
         return self.getLaneById(laneLink.id)
-    def parse(self,curRoad,preLink,sucLink,map,laneCounter,laneSectionId,s,t):
+    def parse(self,curRoad,preLink,sucLink,map,laneCounter,laneSectionId,s,t,speed):
         lis=list(self.lanes)
         lis.append(".")
         for j in range(len(lis)):
@@ -281,7 +244,35 @@ class LanesSection:
             else:
                 leftLane=self.getLaneById(lis[j-1])
                 rightLane=self.getLaneById(lis[j+1])
-            lane.parse(curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter,laneSectionId,s,t)
+            lane.parse(curRoad,preLink,sucLink,leftLane,rightLane,map,laneCounter,laneSectionId,s,t,speed)
+
+class RoadLink:
+    def __init__(self,node,type='node'):
+        #print(node)
+        if type != 'node':
+            self.elementType='road'
+            self.sectionPtr=node
+            return
+        self.kind=node.getElementsByTagName('name')
+        self.elementType=node.getAttribute('elementType')
+        self.ptr=None
+        if self.elementType=='road':
+            self.elementId=node.getAttribute('elementId')
+            self.contactPoint=node.getAttribute('contactPoint')
+        elif self.elementType=='junction':
+            self.elementId=node.getAttribute('elementId')
+        else:
+            log.warning("unknown link type")
+    def setSectionByRoad(self,road):
+        self.sectionPtr=road.getLaneSection(self.contactPoint)
+    def setJunction(self,ptr):
+        self.junctionPtr=ptr
+    def print(self):
+        print(self.elementType)
+        if self.elementType=='road':
+            print(self.sectionPtr)
+        else:
+            print(self.junctionPtr)
 
 class SanesSections:
     def __init__(self,node):
@@ -302,7 +293,7 @@ class SanesSections:
             #traceback.print_stack()
         return None
     
-    def parse(self,curRoad,preLink,sucLink,map,laneCounter,roadLength):#当前road，当前road的前驱，当前road的后继
+    def parse(self,curRoad,preLink,sucLink,map,laneCounter,roadLength,speed):#当前road，当前road的前驱，当前road的后继
         self.road=curRoad
         for i in range(len(self.lanesSections)):
             lanesSection=self.lanesSections[i]
@@ -322,12 +313,30 @@ class SanesSections:
                 sucSection=RoadLink(self.lanesSections[i+1],'section')
                 sucSection.contactPoint='start'
                 t=self.lanesSections[i+1].s
-            lanesSection.parse(curRoad,preSection,sucSection,map,laneCounter,i,s,t)
+            lanesSection.parse(curRoad,preSection,sucSection,map,laneCounter,i,s,t,speed)
             
     def print(self):
         for lane in self.lanes:
             lane.print()
-
+class Speed:
+    def __init__(self,node):
+        self.max=float(node.getAttribute('max'))
+        self.unit=node.getAttribute('unit')
+    def getSpeed_ms(self):
+        if self.unit=='mph':
+            return self.max*1.609344
+        if self.unit=='km/h':
+            return self.max*0.277777778
+        log.warning("unsupport speed unit type: "+self.unit)
+        return self.max
+        
+class Type:
+    def __init__(self,node):
+        self.type=node.getAttribute('type')
+        speedNodes=node.getElementsByTagName('speed')
+        if len(speedNodes)==1:
+            self.speed=Speed(speedNodes[0])
+        
 
 class Road:
     def __init__(self,node,map):
@@ -344,7 +353,6 @@ class Road:
         #self.rule="RHT" 默认靠右行驶
 
         subDict=sub2dict(node)
-        #log.debug("road id: "+self.id)
 
         #link
         linkList=subDict['link']
@@ -360,6 +368,7 @@ class Road:
                 self.successor=RoadLink(l)
         
         #type
+        self.type=None
         typeList=subDict['type']
         if len(typeList) == 1:
             self.type=Type(typeList[0])
@@ -441,7 +450,10 @@ class Road:
             else:
                 log.warning("unknown link type")
         self.roadLength=self.planView.getLength()
-        self.lanes.parse(self,self.predecessor,self.successor,map,laneCounter,self.roadLength)
+        speed=None
+        if self.type is not None:
+            speed=self.type.speed.getSpeed_ms()
+        self.lanes.parse(self,self.predecessor,self.successor,map,laneCounter,self.roadLength,speed)
         self.planView.parse(map)
         if self.signals is not None:
             self.signals.parse(map,signalCounter)

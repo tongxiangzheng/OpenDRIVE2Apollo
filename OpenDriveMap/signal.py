@@ -4,10 +4,13 @@ from OpenDriveMap.dom_tool import sub2dict,Counter
 class Overlap_signal_lane:
     def __init__(self,signal,lane):
         self.kind="signal_with_lane"
+        self.enable=True
+        if len(lane.overlap_signal_lanes)==1:
+            log.info("Multiple signals for one lane: "+lane.fullName)
+            self.enable=False
+            return
         signal.overlap_signal_lanes.append(self)
         lane.overlap_signal_lanes.append(self)
-        if len(lane.overlap_signal_lanes)>1:
-            log.warning("Multiple signals for one lane: "+lane.fullName)
         self.signal=signal
         self.lane=lane
     def getApolloName(self):
@@ -17,6 +20,7 @@ class Overlap_signal_lane:
 class Overlap_junction_signal:
     def __init__(self,junction,signal):
         self.kind="junction_with_signal"
+        self.enable=True
         signal.overlap_junction_signal=self
         junction.overlap_junction_signals.append(self)
         self.junction=junction

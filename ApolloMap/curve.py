@@ -75,7 +75,7 @@ class RoadPoint:
                 p+=1
         if p==len(PlanView.geometrys):
             p-=1
-            log.warning("s: "+str(s)+" is larger than planview length: "+str(geometry.s+geometry.length))
+            log.info("s: "+str(s)+" is larger than planview length: "+str(geometry.s+geometry.length))
         geometry=PlanView.geometrys[p]
         direct,nextL=geometry.getDirect(s,0)
         direct.offset(t)

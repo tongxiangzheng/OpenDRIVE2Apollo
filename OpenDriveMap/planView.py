@@ -125,7 +125,7 @@ class Geometry:
             log.warning("Road "+self.road.id+" : s is "+str(s)+" which less than self.s , self.s is :"+str(self.s))
         s-=self.s
         if s>self.length+limit:
-            log.warning("Road "+self.road.id+" : s is "+str(s)+" which is larger than self.length:"+str(self.length))
+            log.info("Road "+self.road.id+" : s is "+str(s)+" which is larger than self.length:"+str(self.length))
 
         direct=Direct(self.x,self.y,self.hdg)
         nextL=limit

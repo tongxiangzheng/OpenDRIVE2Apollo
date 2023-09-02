@@ -66,62 +66,27 @@ class ApolloMap:
         segment.length=curve.getLength()
         #log.info("----------------------")
 
-    def setLaneFromLane(self,lane,planView,offsetsDict):
-        dist=self.map.lane.add()
-        self.lanes[lane.ApolloId]=dist
-        dist.id.id=lane.ApolloName
-        if lane.forward==1:
-            segment=dist.left_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,"left")
-
-            offsetsDict.addOffsets(lane.widthOffsets,-0.5)
-            segment=dist.central_curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,"central")
-            offsetsDict.popOffsets()
-
-            offsetsDict.addOffsets(lane.widthOffsets,-1)
-            segment=dist.right_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,"right")
-            offsetsDict.popOffsets()
-
-        elif lane.forward==-1:
-            segment=dist.right_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,"right")
-
-            offsetsDict.addOffsets(lane.widthOffsets,0.5)
-            segment=dist.central_curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,"central")
-            offsetsDict.popOffsets()
-
-            offsetsDict.addOffsets(lane.widthOffsets,1)
-            segment=dist.left_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,"left")
-            offsetsDict.popOffsets()
-        else:
-            log.error("unknown forward")
-            
-
+    def setLaneType(self,distLane,lane):
         if lane.type=='shoulder':
-            dist.type=dist.LaneType.SHOULDER
+            distLane.type=distLane.LaneType.SHOULDER
         elif lane.type=='border':
-            dist.type=dist.LaneType.SHOULDER
+            distLane.type=distLane.LaneType.SHOULDER
         elif lane.type=='driving':
-            dist.type=dist.LaneType.CITY_DRIVING
+            distLane.type=distLane.LaneType.CITY_DRIVING
         elif lane.type=='stop':
             log.info('translate:lane:not support lane type:stop')
         elif lane.type=='none':
-            dist.type=dist.LaneType.NONE
+            distLane.type=distLane.LaneType.NONE
         elif lane.type=='restricted':
             log.info('translate:lane:not support lane type:restricted')
         elif lane.type=='parking':
-            dist.type=dist.LaneType.PARKING
+            distLane.type=distLane.LaneType.PARKING
         elif lane.type=='median':
-            #log.warning('translate:lane:not support lane type:median')
-            dist.type=dist.LaneType.SHOULDER
+            distLane.type=distLane.LaneType.SHOULDER
         elif lane.type=='biking':
-            dist.type=dist.LaneType.BIKING
+            distLane.type=distLane.LaneType.BIKING
         elif lane.type=='sidewalk':
-            dist.type=dist.LaneType.SIDEWALK
+            distLane.type=distLane.LaneType.SIDEWALK
         elif lane.type=='curb':
             log.info('translate:lane:not support lane type:curb')
         elif lane.type=='exit':
@@ -135,44 +100,83 @@ class ApolloMap:
         elif lane.type=='connectingRamp':
             log.info('translate:lane:not support lane type:connectingRamp')
         elif lane.type=='bidirectional':
-            dist.type=dist.LaneType.CITY_DRIVING
+            distLane.type=distLane.LaneType.CITY_DRIVING
         else:
             log.info('translate:lane:not known lane type:'+lane.type)
         
+    def setLaneFromLane(self,lane,planView,offsetsDict):
+        distLane=self.map.lane.add()
+        self.lanes[lane.ApolloId]=distLane
+        distLane.id.id=lane.ApolloName
+        if lane.forward==1:
+            segment=distLane.left_boundary.curve.segment.add()
+            self.setSegment(lane,planView,offsetsDict,segment,"left")
+
+            offsetsDict.addOffsets(lane.widthOffsets,-0.5)
+            segment=distLane.central_curve.segment.add()
+            self.setSegment(lane,planView,offsetsDict,segment,"central")
+            offsetsDict.popOffsets()
+
+            offsetsDict.addOffsets(lane.widthOffsets,-1)
+            segment=distLane.right_boundary.curve.segment.add()
+            self.setSegment(lane,planView,offsetsDict,segment,"right")
+            offsetsDict.popOffsets()
+
+        elif lane.forward==-1:
+            segment=distLane.right_boundary.curve.segment.add()
+            self.setSegment(lane,planView,offsetsDict,segment,"right")
+
+            offsetsDict.addOffsets(lane.widthOffsets,0.5)
+            segment=distLane.central_curve.segment.add()
+            self.setSegment(lane,planView,offsetsDict,segment,"central")
+            offsetsDict.popOffsets()
+
+            offsetsDict.addOffsets(lane.widthOffsets,1)
+            segment=distLane.left_boundary.curve.segment.add()
+            self.setSegment(lane,planView,offsetsDict,segment,"left")
+            offsetsDict.popOffsets()
+        else:
+            log.error("unknown forward")
+            
+        self.setLaneType(distLane,lane)
+        
+        if lane.speed is not None:
+            distLane.speed_limit=lane.speed
+
         if lane.overlap_junction_lane is not None:
-            distOverlap=dist.overlap_id.add()
+            distOverlap=distLane.overlap_id.add()
             distOverlap.id=lane.overlap_junction_lane.getApolloName()
         for overlap_signal_lane in lane.overlap_signal_lanes:
-            distOverlap=dist.overlap_id.add()
+            distOverlap=distLane.overlap_id.add()
             distOverlap.id=overlap_signal_lane.getApolloName()
+
         # for overlap_crosswalk_lane in lane.overlap_crosswalk_lanes:
         #     distOverlap=dist.overlap_id.add()
         #     distOverlap.id=overlap_crosswalk_lane.getApolloName()
-        #在crosswalk中处理
+        #在crosswalk中处理，所以注释掉了
 
         if lane.type!='bidirectional':
-            dist.direction=dist.LaneDirection.FORWARD
+            distLane.direction=distLane.LaneDirection.FORWARD
         else:
-            dist.direction=dist.LaneDirection.BIDIRECTION
-
+            distLane.direction=distLane.LaneDirection.BIDIRECTION
 
         for predecessor in lane.ApolloPredecessors:
-            id=dist.predecessor_id.add()
+            id=distLane.predecessor_id.add()
             id.id=predecessor.ApolloName
         for successor in lane.ApolloSuccessors:
-            id=dist.successor_id.add()
+            id=distLane.successor_id.add()
             id.id=successor.ApolloName
         if lane.left_neighbor_forward_lane is not None:
-            id=dist.left_neighbor_forward_lane_id.add()
+            id=distLane.left_neighbor_forward_lane_id.add()
             id.id=lane.left_neighbor_forward_lane.ApolloName
         if lane.left_neighbor_reverse_lane is not None:
-            id=dist.left_neighbor_reverse_lane_id.add()
+            id=distLane.left_neighbor_reverse_lane_id.add()
             id.id=lane.left_neighbor_reverse_lane.ApolloName
         if lane.right_neighbor_reverse_lane is not None:
-            id=dist.right_neighbor_reverse_lane_id.add()
+            id=distLane.right_neighbor_reverse_lane_id.add()
             id.id=lane.right_neighbor_reverse_lane.ApolloName
         if lane.right_neighbor_forward_lane is not None:
-            id=dist.right_neighbor_forward_lane_id.add()
+            id=distLane.right_neighbor_forward_lane_id.add()
             id.id=lane.right_neighbor_forward_lane.ApolloName
         
             
@@ -377,6 +381,8 @@ class ApolloMap:
     
     def setOverlap(self,openDriveMap):
         for overlap in openDriveMap.overlaps:
+            if overlap.enable==False:
+                continue
             distOverlap=self.map.overlap.add()
             if overlap.kind=="junction_with_lane":
                 distOverlap.id.id=overlap.getApolloName()
