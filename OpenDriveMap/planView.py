@@ -2,7 +2,6 @@ from loguru import logger as log
 from OpenDriveMap.dom_tool import sub2dict,dfs
 import math
 from numpy import pi,sqrt
-import matplotlib.pyplot as plt
 from pyclothoids import Clothoid
 limit=0.0000001
 class Offset:
