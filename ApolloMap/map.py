@@ -1,4 +1,10 @@
 from loguru import logger as log
+import os
+import sys
+
+LIBDIR = os.path.split(os.path.abspath(__file__))[0]
+
+sys.path.insert(0,os.path.join(LIBDIR, 'proto_lib'))
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 import ApolloMap.proto_lib.modules.map.proto.map_overlap_pb2 as map_overlap_pb2
 import pyproj
@@ -38,14 +44,32 @@ class ApolloMap:
     def setJunction(self,openDriveMap):
     
         for junction in openDriveMap.junctions.junctions.values():
-            dist=self.map.junction.add()
-            dist.id.id=junction.ApolloName
+            distJunction=self.map.junction.add()
+            distJunction.id.id=junction.ApolloName
+
+            distPoint=distJunction.polygon.point.add()
+            distPoint.x=0.0
+            distPoint.y=0.0
+            distPoint.z=0.0
+            distPoint=distJunction.polygon.point.add()
+            distPoint.x=5.0
+            distPoint.y=0.0
+            distPoint.z=0.0
+            distPoint=distJunction.polygon.point.add()
+            distPoint.x=5.0
+            distPoint.y=5.0
+            distPoint.z=0.0
+            distPoint=distJunction.polygon.point.add()
+            distPoint.x=0.0
+            distPoint.y=5.0
+            distPoint.z=0.0
+            
             #self.setpolygon(dist,junction)
             for overlap_junction_lane in junction.overlap_junction_lanes:
-                distOverlap=dist.overlap_id.add()
+                distOverlap=distJunction.overlap_id.add()
                 distOverlap.id=overlap_junction_lane.getApolloName()
             for overlap_junction_signal in junction.overlap_junction_signals:
-                distOverlap=dist.overlap_id.add()
+                distOverlap=distJunction.overlap_id.add()
                 distOverlap.id=overlap_junction_signal.getApolloName()
 
     def setSegment(self,lane,planView,offsetsDict,segment,notes):
