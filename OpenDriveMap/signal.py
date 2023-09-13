@@ -72,7 +72,8 @@ class Siginal:
         self.referenceValiditys.append(validity)
     def addReference(self,reference):
         self.references.append(reference)
-
+    def getReferenceCount(self):
+        return len(self.references)
     def parse(self,map):
         for validity in self.validitys:
             validity.parse(self,map)
@@ -95,11 +96,14 @@ class SignalReference:
         self.road=road
         
     def parse(self,map,signalCounter):
-        self.ApolloId=signalCounter.getId()
-        self.ApolloName="signal_"+self.ApolloId
         signal=map.signals[self.id]
         self.signal=signal
         signal.addReference(self)
+
+        #self.ApolloId=signalCounter.getId()
+        self.ApolloId=self.id+str(signal.getReferenceCount()).zfill(2)
+        
+        self.ApolloName="signal_"+self.ApolloId
         if len(self.validitys)!=1:
             log.warning("cannot solve it now")
         for validity in self.validitys:

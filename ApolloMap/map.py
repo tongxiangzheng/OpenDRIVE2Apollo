@@ -16,8 +16,8 @@ class ApolloMap:
         self.parse_from_OpenDrive(openDriveMap)
         
     def setProjection(self,projText):
-        #if projText is not None:
-            #self.sourceCrs=pyproj.CRS.from_proj4(projText)
+        if projText is not None:
+            self.sourceCrs=pyproj.CRS.from_proj4(projText)
         
         self.transformer = pyproj.Transformer.from_crs(self.sourceCrs, self.distCrs)
 	
@@ -434,7 +434,7 @@ class ApolloMap:
     def parse_from_OpenDrive(self,openDriveMap):
         self.sourceCrs=pyproj.CRS.from_proj4("+proj=utm +zone=10 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
             #if proj data is empty,use "+proj=utm +zone={} +ellps=WGS84" by default
-        self.distCrs=pyproj.CRS.from_proj4("+proj=utm +zone=10 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+        self.distCrs=pyproj.CRS.from_proj4("+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
        
         self.setHeader(openDriveMap)
         self.setJunction(openDriveMap)

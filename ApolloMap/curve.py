@@ -25,8 +25,11 @@ class Point:
     def __init__(self,x,y,transformer):
         self.x=x
         self.y=y
-
-        self.x,self.y=transformer.transform(self.x,self.y)
+        
+        self.x+=586251
+        self.y+=4141282
+        
+        #self.x,self.y=transformer.transform(self.x,self.y)
 
         self.preLine=None
         self.sucLine=None

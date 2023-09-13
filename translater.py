@@ -41,11 +41,16 @@ def cp(pathFrom,pathTo):
       fw.write(fr.read())
 def toComOpT(path):
   translate(path,"01")
-  cp("01.bin","F:\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin")
-  cp("01.bin","F:\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin")
-  
+  cp("01.bin","F:/ComOpT/scripts/comopt/data/map/openDriveTest/base_map.bin")
+  cp("01.bin","F:/ComOpT/scripts/comopt/data/map/openDriveTest/svl_map.bin")
+
+def toApollo(path):
+  translate(path,"01")
+  cp("01.bin","/home/txz/dockerMap/opendrive_test/base_map.bin")
+  cp("01.txt","/home/txz/dockerMap/opendrive_test/base_map.txt")
 
 tryAll()
+#toApollo("OpenDrive-maps-from-CARLA/carla_Town01.xodr")
 #translate("../../OpenDrive-maps-from-CARLA/carla_Town06.xodr","01")
 #toComOpT("../../OpenDrive-maps-from-CARLA/carla_Town04.xodr")
 
@@ -63,9 +68,9 @@ tryAll()
 #with open("01.bin", "wb") as f:
 #  f.write(ApolloMap.map.SerializeToString())
 
-#with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\base_map.bin", "wb") as f:
+#with open("C:/Users/DELL/ComOpT/scripts/comopt/data/map/openDriveTest/base_map.bin", "wb") as f:
 #  f.write(ApolloMap.map.SerializeToString())
-#with open("C:\\Users\\DELL\\ComOpT\\scripts\\comopt\\data\\map\\openDriveTest\\svl_map.bin", "wb") as f:
+#with open("C:/Users/DELL/ComOpT/scripts/comopt/data/map/openDriveTest/svl_map.bin", "wb") as f:
 #  f.write(ApolloMap.map.SerializeToString())
 
 
