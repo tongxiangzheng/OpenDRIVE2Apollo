@@ -1,5 +1,8 @@
 # OpenDRIVE2Apollo
-run:
+
+## run:
+
+```
 mkdir mapData
 python3 translater.py
-
+```
