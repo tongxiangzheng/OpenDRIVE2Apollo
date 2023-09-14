@@ -4,5 +4,5 @@
 
 ```
 mkdir mapData
-python3 translater.py
+python3 translateAll.py
 ```
