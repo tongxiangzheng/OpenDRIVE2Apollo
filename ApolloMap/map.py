@@ -8,7 +8,7 @@ sys.path.insert(0,os.path.join(LIBDIR, 'proto_lib'))
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
 import ApolloMap.proto_lib.modules.map.proto.map_overlap_pb2 as map_overlap_pb2
 import pyproj
-from ApolloMap.curve import Curve,OffsetsDict,RoadPoint,Polygon
+from ApolloMap.curve import Curve,OffsetsDict,RoadPoint,Polygon,Point
 class ApolloMap:
     def __init__(self,openDriveMap):
         self.map=map_pb2.Map()
@@ -26,7 +26,7 @@ class ApolloMap:
         self.map.header.version=b"1.500000"
         self.map.header.date=str.encode(openDriveMap.header.date)
     
-        self.map.header.projection.proj=str.encode("+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+        self.map.header.projection.proj=str.encode("+proj=utm +zone=10 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
         self.setProjection(openDriveMap.header.geoReference.data)
     
         self.map.header.district=b"0" #不知道作用
@@ -48,20 +48,21 @@ class ApolloMap:
             distJunction.id.id=junction.ApolloName
 
             distPoint=distJunction.polygon.point.add()
-            distPoint.x=0.0
-            distPoint.y=0.0
+            p=Point(0,0,self.transformer)
+            distPoint.x=p.x
+            distPoint.y=p.y
             distPoint.z=0.0
             distPoint=distJunction.polygon.point.add()
-            distPoint.x=5.0
-            distPoint.y=0.0
+            distPoint.x=p.x+5.0
+            distPoint.y=p.y
             distPoint.z=0.0
             distPoint=distJunction.polygon.point.add()
-            distPoint.x=5.0
-            distPoint.y=5.0
+            distPoint.x=p.x+5.0
+            distPoint.y=p.y+5.0
             distPoint.z=0.0
             distPoint=distJunction.polygon.point.add()
-            distPoint.x=0.0
-            distPoint.y=5.0
+            distPoint.x=p.x
+            distPoint.y=p.y+5.0
             distPoint.z=0.0
             
             #self.setpolygon(dist,junction)
@@ -147,8 +148,9 @@ class ApolloMap:
             offsetsDict.popOffsets()
 
         elif lane.forward==-1:
-            segment=distLane.right_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,"right")
+            segment=distLane.left_boundary.curve.segment.add()
+            self.setSegment(lane,planView,offsetsDict,segment,"left")
+            #站在road方向看是right，站在lane的方向看是left
 
             offsetsDict.addOffsets(lane.widthOffsets,0.5)
             segment=distLane.central_curve.segment.add()
@@ -156,8 +158,8 @@ class ApolloMap:
             offsetsDict.popOffsets()
 
             offsetsDict.addOffsets(lane.widthOffsets,1)
-            segment=distLane.left_boundary.curve.segment.add()
-            self.setSegment(lane,planView,offsetsDict,segment,"left")
+            segment=distLane.right_boundary.curve.segment.add()
+            self.setSegment(lane,planView,offsetsDict,segment,"right")
             offsetsDict.popOffsets()
         else:
             log.error("unknown forward")
