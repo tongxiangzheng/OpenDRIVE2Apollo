@@ -252,9 +252,9 @@ class ApolloMap:
                 distRoad.junction_id.id=road.junction.ApolloName
             #distRoad.type=distRoad.Type.CITY_ROAD
     def setSignalReference(self,signalReference):
-
         distSignal=self.map.signal.add()
         distSignal.type=distSignal.Type.MIX_3_VERTICAL
+
         distSignal.id.id=signalReference.ApolloName
         for overlap_signal_lane in signalReference.overlap_signal_lanes:
             distOverlap=distSignal.overlap_id.add()
