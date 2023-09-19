@@ -6,7 +6,7 @@ from collections import defaultdict
 import random
 import itertools
 
-mapPath="../../OpenDrive-maps-from-CARLA/carla_Town01.xodr"
+mapPath="OpenDrive-maps-from-CARLA/carla_Town01.xodr"
 
 
 def math_rotate(x, y, hdg):
