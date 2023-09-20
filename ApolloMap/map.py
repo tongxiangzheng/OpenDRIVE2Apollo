@@ -79,9 +79,9 @@ class ApolloMap:
             lane.setCentralCurve(curve)
             lane.setCentraloffsetsDict(offsetsDict)
         for point in curve.points:
-            dictPoint=segment.line_segment.point.add()
-            dictPoint.x=point.x
-            dictPoint.y=point.y
+            distPoint=segment.line_segment.point.add()
+            distPoint.x=point.x
+            distPoint.y=point.y
             #log.info(str(point.x)+' '+str(point.y))
         segment.s=0.0
         segment.start_position.x=curve.points[0].x
@@ -89,7 +89,6 @@ class ApolloMap:
         segment.start_position.x=0.0
         
         segment.length=curve.getLength()
-        #log.info("----------------------")
 
     def setLaneType(self,distLane,lane):
         if lane.type=='shoulder':
@@ -137,6 +136,7 @@ class ApolloMap:
             segment=distLane.left_boundary.curve.segment.add()
             self.setSegment(lane,planView,offsetsDict,segment,"left")
 
+
             offsetsDict.addOffsets(lane.widthOffsets,-0.5)
             segment=distLane.central_curve.segment.add()
             self.setSegment(lane,planView,offsetsDict,segment,"central")
@@ -146,6 +146,7 @@ class ApolloMap:
             segment=distLane.right_boundary.curve.segment.add()
             self.setSegment(lane,planView,offsetsDict,segment,"right")
             offsetsDict.popOffsets()
+
 
         elif lane.forward==-1:
             segment=distLane.left_boundary.curve.segment.add()
@@ -163,11 +164,41 @@ class ApolloMap:
             offsetsDict.popOffsets()
         else:
             log.error("unknown forward")
-            
+        
+        distBoundaryType=distLane.left_boundary.boundary_type.add()
+        distBoundaryType.s=0.0
+
+        if lane.junction is not None:
+            distBoundaryType.types.append(distBoundaryType.Type.SOLID_WHITE)   #unbengable
+        elif lane.left_neighbor_forward_lane is not None:
+            distBoundaryType.types.append(distBoundaryType.Type.DOTTED_WHITE)
+        elif lane.left_neighbor_reverse_lane is not None:
+            distBoundaryType.types.append(distBoundaryType.Type.SOLID_YELLOW)
+        else:
+            distBoundaryType.types.append(distBoundaryType.Type.CURB)
+
+        distBoundaryType=distLane.right_boundary.boundary_type.add()
+        distBoundaryType.s=0.0
+
+        if lane.junction is not None:
+        #     if lane.right_neighbor_forward_lane is None and lane.right_neighbor_reverse_lane is None:
+        #         distBoundaryType.types.append(distBoundaryType.Type.CURB)
+        #     else:
+        #         distBoundaryType.types.append(distBoundaryType.Type.SOLID_WHITE)
+            distBoundaryType.types.append(distBoundaryType.Type.SOLID_WHITE)
+        elif lane.right_neighbor_forward_lane is not None:
+            distBoundaryType.types.append(distBoundaryType.Type.DOTTED_WHITE)
+        elif lane.right_neighbor_reverse_lane is not None:
+            distBoundaryType.types.append(distBoundaryType.Type.SOLID_YELLOW)
+        else:
+            distBoundaryType.types.append(distBoundaryType.Type.CURB)
+
         self.setLaneType(distLane,lane)
         
         if lane.speed is not None:
             distLane.speed_limit=lane.speed
+        else:
+            distLane.speed_limit=60.0
 
         if lane.overlap_junction_lane is not None:
             distOverlap=distLane.overlap_id.add()

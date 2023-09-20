@@ -26,7 +26,7 @@ class Point:
         self.x=x
         self.y=y
         
-        #self.x+=586251
+        #self.x+=587651
         #self.y+=4141282
         
         #self.x,self.y=transformer.transform(self.x,self.y)

@@ -46,13 +46,13 @@ def toComOpT(path):
 
 def toApollo(path):
   translate(path,"01")
-  cp("01.bin","/home/txz/dockerMap/opendrive_test/base_map.bin")
+  #cp("01.bin","/home/txz/dockerMap/opendrive_test/base_map.bin")
   cp("01.txt","/home/txz/dockerMap/opendrive_test/base_map.txt")
 
 #tryAll()
-#toApollo("OpenDrive-maps-from-CARLA/carla_Town10HD.xodr")
+toApollo("OpenDrive-maps-from-CARLA/carla_Town03.xodr")
 #translate("../../OpenDrive-maps-from-CARLA/carla_Town06.xodr","01")
-toComOpT("OpenDrive-maps-from-CARLA/carla_Town01.xodr")
+#toComOpT("OpenDrive-maps-from-CARLA/carla_Town01.xodr")
 
 
 #mapPath="../../OpenDrive-maps-from-CARLA/carla_Town03.xodr"
