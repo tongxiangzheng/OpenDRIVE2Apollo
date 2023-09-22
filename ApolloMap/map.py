@@ -295,52 +295,54 @@ class ApolloMap:
         if signalReference.overlap_junction_signal is not None:
             distOverlap=distSignal.overlap_id.add()
             distOverlap.id=signalReference.overlap_junction_signal.getApolloName()
-        roadPoint=RoadPoint(signalReference.road.planView,signalReference.s,signalReference.t,self.transformer)
+
+        signalPoint=RoadPoint(signalReference.signal.road.planView,signalReference.signal.s,signalReference.signal.t,self.transformer)
+        signalReferencePoint=RoadPoint(signalReference.road.planView,signalReference.s,signalReference.t,self.transformer)
         
         distPoint=distSignal.boundary.point.add()
-        distPoint.x=roadPoint.point.x-5.0
-        distPoint.y=roadPoint.point.y-5.0
+        distPoint.x=signalPoint.point.x-5.0
+        distPoint.y=signalPoint.point.y-5.0
         distPoint.z=0.0
         
         distPoint=distSignal.boundary.point.add()
-        distPoint.x=roadPoint.point.x+5.0
-        distPoint.y=roadPoint.point.y-5.0
+        distPoint.x=signalPoint.point.x+5.0
+        distPoint.y=signalPoint.point.y-5.0
         distPoint.z=0.0
         
         distPoint=distSignal.boundary.point.add()
-        distPoint.x=roadPoint.point.x+5.0
-        distPoint.y=roadPoint.point.y+5.0
+        distPoint.x=signalPoint.point.x+5.0
+        distPoint.y=signalPoint.point.y+5.0
         distPoint.z=0.0
         
         distPoint=distSignal.boundary.point.add()
-        distPoint.x=roadPoint.point.x-5.0
-        distPoint.y=roadPoint.point.y+5.0
+        distPoint.x=signalPoint.point.x-5.0
+        distPoint.y=signalPoint.point.y+5.0
         distPoint.z=0.0
 
         
         subSignal0=distSignal.subsignal.add()
         subSignal0.id.id="0"
         subSignal0.type=subSignal0.Type.CIRCLE
-        subSignal0.location.x=roadPoint.point.x
-        subSignal0.location.y=roadPoint.point.y
+        subSignal0.location.x=signalPoint.point.x
+        subSignal0.location.y=signalPoint.point.y
         subSignal0.location.z=0.0
 
         subSignal1=distSignal.subsignal.add()
         subSignal1.id.id="1"
         subSignal1.type=subSignal0.Type.CIRCLE
-        subSignal1.location.x=roadPoint.point.x
-        subSignal1.location.y=roadPoint.point.y
+        subSignal1.location.x=signalPoint.point.x
+        subSignal1.location.y=signalPoint.point.y
         subSignal1.location.z=1.0
         
         subSignal2=distSignal.subsignal.add()
         subSignal2.id.id="2"
         subSignal2.type=subSignal0.Type.CIRCLE
-        subSignal2.location.x=roadPoint.point.x
-        subSignal2.location.y=roadPoint.point.y
+        subSignal2.location.x=signalPoint.point.x
+        subSignal2.location.y=signalPoint.point.y
         subSignal2.location.z=2.0
 
         
-        roadPoint.Offset(-signalReference.t)
+        signalReferencePoint.Offset(-signalReference.t)
         distStopLine=distSignal.stop_line.add()
         distStopLineSegment=distStopLine.segment.add()
         if len(signalReference.validitys)!=1:
@@ -349,30 +351,30 @@ class ApolloMap:
             lane=signalReference.validitys[0].lane_ptrs[i]
             width=lane.widthOffsets.getOffset(signalReference.s,"-")
             central=lane.centralOffsetsDict.getOffset(signalReference.s,"-")
-            roadPoint.Offset(central)
+            signalReferencePoint.Offset(central)
             if i==0:
                 width=lane.widthOffsets.getOffset(signalReference.s,"-")
                 distStopLinePoint=distStopLineSegment.line_segment.point.add()
-                roadPoint.Offset(width*0.5)
-                distStopLinePoint.x=roadPoint.point.x
-                distStopLinePoint.y=roadPoint.point.y
+                signalReferencePoint.Offset(width*0.5)
+                distStopLinePoint.x=signalReferencePoint.point.x
+                distStopLinePoint.y=signalReferencePoint.point.y
                 distStopLinePoint.z=0.0
-                roadPoint.Offset(-width*0.5)
+                signalReferencePoint.Offset(-width*0.5)
 
             distStopLinePoint=distStopLineSegment.line_segment.point.add()
-            distStopLinePoint.x=roadPoint.point.x
-            distStopLinePoint.y=roadPoint.point.y
+            distStopLinePoint.x=signalReferencePoint.point.x
+            distStopLinePoint.y=signalReferencePoint.point.y
             distStopLinePoint.z=0.0
 
             if i==len(signalReference.validitys[0].lane_ptrs)-1:
                 width=lane.widthOffsets.getOffset(signalReference.s,"-")
                 distStopLinePoint=distStopLineSegment.line_segment.point.add()
-                roadPoint.Offset(-width*0.5)
-                distStopLinePoint.x=roadPoint.point.x
-                distStopLinePoint.y=roadPoint.point.y
+                signalReferencePoint.Offset(-width*0.5)
+                distStopLinePoint.x=signalReferencePoint.point.x
+                distStopLinePoint.y=signalReferencePoint.point.y
                 distStopLinePoint.z=0.0
-                roadPoint.Offset(width*0.5)
-            roadPoint.Offset(-central)
+                signalReferencePoint.Offset(width*0.5)
+            signalReferencePoint.Offset(-central)
         
 
     def setSignal(self,openDriveMap):

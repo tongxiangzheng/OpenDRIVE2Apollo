@@ -50,7 +50,7 @@ def toApollo(path):
   cp("01.txt","/home/txz/dockerMap/opendrive_test/base_map.txt")
 
 #tryAll()
-toApollo("OpenDrive-maps-from-CARLA/carla_Town03.xodr")
+toApollo("OpenDrive-maps-from-CARLA/carla_Town05.xodr")
 #translate("../../OpenDrive-maps-from-CARLA/carla_Town06.xodr","01")
 #toComOpT("OpenDrive-maps-from-CARLA/carla_Town01.xodr")
 

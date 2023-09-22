@@ -26,7 +26,7 @@ class Overlap_junction_signal:
         self.junction=junction
         self.signal=signal
     def getApolloName(self):
-        print(f'overlap-j-s: {self.signal.ApolloId}')
+        # print(f'overlap-j-s: {self.signal.ApolloId}')
         ApolloName='overlap_junction_I0_J'+self.junction.ApolloId+'_signal_'+self.signal.ApolloId+"_0"
         return ApolloName
 
@@ -102,7 +102,7 @@ class SignalReference:
         signal.addReference(self)
 
         #self.ApolloId=signalCounter.getId()
-        print(int(self.id))
+        # print(int(self.id))
         self.ApolloId = str(int(self.id) * (10 ** 8) + signal.getReferenceCount())
         self.ApolloName = f'signal_{self.ApolloId}'
         # self.ApolloId=self.id+str(signal.getReferenceCount()).zfill(2)
