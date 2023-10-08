@@ -4,6 +4,9 @@ import OpenDriveMap.map
 import ApolloMap.map
 from loguru import logger as log
 import ApolloMap.proto_lib.modules.map.proto.map_pb2 as map_pb2
+import argparse
+
+
 def translate(fromPath,toPath):
   doc=xml.dom.minidom.parse(fromPath)
   openDriveMap=OpenDriveMap.map.OpenDriveMap(doc)
@@ -12,6 +15,19 @@ def translate(fromPath,toPath):
     print(apolloMap.map,file=f)
   with open(toPath+'.bin', "wb") as f:
     f.write(apolloMap.map.SerializeToString())
+
+parser = argparse.ArgumentParser(description='translate OpenDrive map to a Apollo map')
+parser.add_argument('-i', '--input', help='input OpenDrive map file', required=True)
+parser.add_argument('-o','--output',help='output Apollo map file location and name', required=True)
+
+args = parser.parse_args()
+
+inputFile=args.input
+outputFile=args.output
+log.info("start translate "+inputFile+" to "+outputFile)
+translate(inputFile,outputFile)
+log.info("translate end")
+
 
 def tryAll():
   log.info("translate map 01")
@@ -50,7 +66,7 @@ def toApollo(path):
   cp("01.txt","/home/txz/dockerMap/opendrive_test/base_map.txt")
 
 #tryAll()
-toApollo("OpenDrive-maps-from-CARLA/carla_Town03.xodr")
+#toApollo("OpenDrive-maps-from-CARLA/carla_Town03.xodr")
 #translate("../../OpenDrive-maps-from-CARLA/carla_Town06.xodr","01")
 #toComOpT("../../OpenDrive-maps-from-CARLA/carla_Town04.xodr")
 
